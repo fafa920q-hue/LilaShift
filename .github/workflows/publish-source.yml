@@ -1,0 +1,112 @@
+name: Publish v1.0.7 corresponding source and notes
+
+# Releases an assembled GPLv3 source archive without touching/replacing the existing IPA.
+# Triggered once when this workflow and notes land on main; manually rerunnable.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-source.yml
+      - RELEASE_NOTES_v1.0.7-china-unlock.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-gestaltx-v107-source
+  cancel-in-progress: false
+
+jobs:
+  source-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out release build repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out pinned GestaltX source
+        uses: actions/checkout@v4
+        with:
+          repository: huamidev/GestaltX
+          ref: dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f
+          path: upstream
+          persist-credentials: false
+
+      - name: Verify release inputs, apply patch and assemble corresponding source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          git show v1.0.7-china-unlock:china-unlock-v107.patch > dist/china-unlock-v107.patch
+          cmp dist/china-unlock-v107.patch china-unlock-v107.patch
+          git -C upstream apply --check ../dist/china-unlock-v107.patch
+          git -C upstream apply ../dist/china-unlock-v107.patch
+          (cd upstream && python3 -X utf8 scripts/generate_localization.py && python3 -X utf8 tests/LocalizationTests.py)
+          mkdir -p upstream/Distribution
+          cp dist/china-unlock-v107.patch upstream/Distribution/china-unlock-v107.patch
+          cp LICENSE SOURCE_AND_BUILD.md THIRD_PARTY_NOTICES.md RELEASE_CHECKLIST.md RELEASE_NOTES_v1.0.7-china-unlock.md upstream/Distribution/
+          cat > upstream/Distribution/BUILD_PROVENANCE.txt <<'EOF'
+          GestaltX v1.0.7 China Unlock (unofficial) corresponding-source snapshot
+          Original source: huamidev/GestaltX
+          Original commit: dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f
+          Modification patch: china-unlock-v107.patch from v1.0.7-china-unlock release tag
+          License: GNU GPL v3; preserve upstream source-file and third-party notices
+          This assembled source snapshot is not an independent attestation of binary provenance.
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          root = Path('upstream')
+          out = Path('dist/GestaltX_1.0.7_ChinaUnlock_Source.zip')
+          with ZipFile(out, 'w', compression=ZIP_DEFLATED, compresslevel=9) as z:
+              for path in sorted(root.rglob('*')):
+                  if not path.is_file() or '.git' in path.parts:
+                      continue
+                  z.write(path, 'GestaltX_1.0.7_ChinaUnlock_Source/' + str(path.relative_to(root)))
+          print(f'Source archive created: {out}, {out.stat().st_size} bytes')
+          PY
+          unzip -tq dist/GestaltX_1.0.7_ChinaUnlock_Source.zip
+        # The source zip contains the complete upstream source tree with the
+        # published patch already applied, plus build and attribution notes.
+
+      - name: Verify existing IPA and calculate release checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release download v1.0.7-china-unlock \
+            --repo "${{ github.repository }}" \
+            --pattern "GestaltX_1.0.7_ChinaUnlock.ipa" \
+            --dir dist
+          printf '%s  %s\n' \
+            '8906197a6901680fc9bf06e014f086e27071165c03463a0a76756647edb4a60f' \
+            'dist/GestaltX_1.0.7_ChinaUnlock.ipa' | sha256sum --check
+          (cd dist && sha256sum GestaltX_1.0.7_ChinaUnlock.ipa GestaltX_1.0.7_ChinaUnlock_Source.zip > SHA256SUMS.txt)
+
+      - name: Upload source archive and checksums (keep the original IPA untouched)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload v1.0.7-china-unlock \
+            dist/GestaltX_1.0.7_ChinaUnlock_Source.zip \
+            dist/SHA256SUMS.txt \
+            --repo "${{ github.repository }}" \
+            --clobber
+
+      - name: Update the existing release title and bilingual description
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release edit v1.0.7-china-unlock \
+            --repo "${{ github.repository }}" \
+            --title "GestaltX v1.0.7 China Unlock — 非官方增强版 / Unofficial Build" \
+            --notes-file RELEASE_NOTES_v1.0.7-china-unlock.md

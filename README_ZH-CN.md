@@ -12,6 +12,8 @@
 
 [English](README.md) · [简体中文](README_ZH-CN.md)
 
+> **非官方修改版 / 发布说明：** 本仓库不是 huamidev 的官方发布渠道。IPA 对应源码需要从固定上游提交和公开补丁还原；GitHub 自动生成的源码 ZIP 并不是已展开的完整修改版源码。详见 [对应源码与构建说明](SOURCE_AND_BUILD.md)、[第三方版权声明](THIRD_PARTY_NOTICES.md) 和 [发布前检查表](RELEASE_CHECKLIST.md)。标记功能不等于实际开通服务；请遵守设备所在地的法律及运营商、服务提供方规则。
+
 国行 iPhone 一键解锁：eSIM、地区码、Apple Intelligence，一次点按完成。基于官方 GestaltX v1.0.7 构建。
 
 ## 这是什么仓库
