@@ -1,10 +1,18 @@
-# GestaltX 1.0.7 — China Unlock Build
+![GestaltX](https://raw.githubusercontent.com/huamidev/GestaltX/main/GestaltX/Assets.xcassets/AppIcon.appiconset/AppIcon.png)
 
-> One-tap eSIM, region code and Apple Intelligence setup for China-model iPhones — built from upstream GestaltX v1.0.7.
->
-> 国行 iPhone 一键解锁：eSIM、地区码、Apple Intelligence，一次点按完成。基于官方 GestaltX v1.0.7 构建。
+## GestaltX 1.0.7 — China Unlock Build
 
-English | [简体中文](#这是什么仓库)
+[![Version](https://img.shields.io/badge/version-1.0.7-blue)](https://github.com/fafa920q-hue/gestaltx-china-unlock-build)
+
+[![Platform](https://img.shields.io/badge/iOS-27.x-black?logo=apple)](#compatibility)
+
+[![SwiftUI](https://img.shields.io/badge/Swift-SwiftUI-orange?logo=swift)](https://github.com/fafa920q-hue/gestaltx-china-unlock-build)
+
+[![License](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
+
+[English](README.md) · [简体中文](README_ZH-CN.md)
+
+One-tap eSIM, region code and Apple Intelligence setup for China-model iPhones — built from upstream GestaltX v1.0.7.
 
 ## What this repository is
 
@@ -20,17 +28,46 @@ This is the **build repository** for the China Unlock enhanced version of Gestal
 - **Author badge and progress cards.** Maintainer `@steam8871` is credited in the header and the About page. Reading and applying show real progress (backup / write / verify / done) driven by the actual operation — never faked.
 - **Open-source compliance.** The About page carries an "Open Source & Acknowledgements" section, the full GPL v3.0 text is bundled in the app, and the enhanced source repository (this repo) is linked in the app.
 
+## Features
+
+| Category | Presets and tools |
+| --- | --- |
+| China Unlock | One-tap staging of 9 items: eSIM switches, region code US (`LL`), and six Apple Intelligence capabilities — reviewed before applying, with eSIM cache-layout verification, automatic backup, read-back verification, and one-tap restore |
+| Display | Dynamic Island capability and layout, Always-On Display, AOD Vibrancy, high-luminance AOD, AOD flipbook, HDR photo display, wallpaper parallax, Liquid Glass low-power rendering, experimental PWM and DisplayPort flags |
+| Device | Model name, boot/shutdown chime, charge limit, tap to wake, Camera Control settings, Action Button settings, Collision SOS, Audio Mix, Spatial FaceTime audio |
+| iPad | Apple Pencil settings, Stage Manager capability, iPad app compatibility |
+| Intelligence | Independent region-code options, Apple Intelligence capability flag, on-device Siri, Audio Intelligence, Personal Translator, Photos Clean Up, Handwriting Synthesis, always-listening Hey Siri, and sales-region options for activation attempts on China-mainland devices |
+| Advanced | Apple internal feature flags, the system-wide InternalBuild flag with explicit enable confirmation, internal settings bundle, Security Research Device flag |
+| Field editor | Read, search, add, edit, and remove `CacheExtra` fields; local plist import/export; String, Integer, Real, Boolean, Data, Date, Array, and Dictionary values |
+| Changes | Automatic reading and manual re-read, staged before/after review, verified writes, per-preset restore |
+| Backups | Automatic initial backup before device editing, backup before every write, original-value records; open, export, restore, and delete |
+| Logs & respring | Actual exploit-stage logs and manual NeoSpring respring |
+
+Usually, changing the region code is enough to try enabling AI; there is no need to change Sales Region. Selecting United States for Region Code sets `RegionCode` to `LL` and keeps the sales-region suffix. You can also choose China (Mainland), Hong Kong, Taiwan, Japan or the United Kingdom. Sales Region and Region Code can be applied together: the sales suffix follows Sales Region, while the code follows Region Code.
+
+*If you previously changed Sales Region, restore your device’s original sales region and apply it first.*
+
+Disabling a preset or using its Revert button restores the recorded original values and types. Keys that were originally absent are removed. If an older change has no original record, use Remove Added Fields only when you know those fields were added.
+
+Presets modify capability flags; actual effects depend on the device and OS. China-mainland devices can use the Apple Intelligence and region options to attempt activation; availability also depends on the model, OS version, and Apple services.
+
+## Compatibility
+
+Supports **iOS / iPadOS 27.x**. **iOS / iPadOS 26.x is not supported for on-device MobileGestalt access.** Powered by [worse_query](https://github.com/forcequitOS/worse_query). SystemGroup access requires iOS 27; available features depend on the device and OS. Local plist editing is also supported.
+
+Signing requires a certificate and provisioning profile with at least one usable App Group. Sign the app and its embedded share extension with at least one **common App Group**, and keep the extension when re-signing. Both processes detect their actual signed App Groups at runtime. Distributed IPAs carry ad-hoc signatures with these entitlements embedded so SideStore and AltStore can detect them when re-signing; they are not signed with a developer certificate.
+
+The easiest install needs no signing at all: [LiveContainer](https://github.com/khanhduytran0/LiveContainer) runs the original IPA without re-signing, so the App Group requirement is met without a paid developer account.
+
 ## Download
 
-Built IPAs are published as GitHub Actions artifacts (14-day retention) on the [Actions tab](https://github.com/fafa920q-hue/gestaltx-china-unlock-build/actions). Download the `GestaltX_1.0.7_ChinaUnlock` artifact for the latest successful `Build GestaltX China Unlock` run.
+Download the IPA from [Releases](https://github.com/fafa920q-hue/gestaltx-china-unlock-build/releases/latest) — latest: `GestaltX_1.0.7_ChinaUnlock.ipa` (bundle `com.huami.gestultx`, version `1.0.7`, build `11130112`, minimum iOS `26.0`, ~3.6 MB).
 
-- Bundle ID: `com.huami.gestultx`
-- Version: `1.0.7` (build `11130112`), minimum iOS `26.0`
-- Size: ~3.6 MB
+Some users report incomplete downloads with Safari on iOS 27. If the file is reported as damaged or cannot be extracted, download it again; several attempts may be needed. Try another browser if it persists. The cause has not been confirmed.
 
 ## Install
 
-1. Install the IPA with [LiveContainer](https://github.com/khanhduytran0/LiveContainer) — it runs the original IPA without re-signing, so the App Group requirement is met without a paid developer account.
+1. Install the IPA with [LiveContainer](https://github.com/khanhduytran0/LiveContainer).
 2. Open GestaltX and tap **Read Device** first.
 3. Open **China Unlock**, review the 9 staged items, then apply.
 4. **Restart the device** after applying, then check eSIM and Apple Intelligence in system Settings.
@@ -45,6 +82,14 @@ Built IPAs are published as GitHub Actions artifacts (14-day retention) on the [
 - **Do not update iOS blindly.** GestaltX relies on an unpatched iOS sandbox-escape vulnerability (`worse_query`). Apple may close it in a future update; confirm compatibility before updating if you rely on this tool.
 - **Back up before applying.** The app backs up automatically, but a separate device backup is still good practice.
 
+## Import a plist
+
+In Files or another app, select a MobileGestalt plist, tap **Share**, and choose **GestaltX**. The share extension reads the supplied file and hands it to the app through the shared App Group. Return to GestaltX if it does not open automatically. The app checks a device-bound proof from a GestaltX export, or at least two unique identifiers obtained from this device, then asks you to confirm the import. Files that cannot be verified are rejected. Previously imported files are never used as the reference for device identity.
+
+Some original plists contain no unique device identifiers. Export a copy from GestaltX on this device first: its verification key stays in the device-only Keychain and is never included in the file.
+
+Shared files are checked at launch and on return to the foreground. Pending edits are preserved until you save or discard them. Confirmed imports open as local documents. **MG Control** supports adding, editing, renaming and deleting typed keys and values. Use **Restore Imported Plist** to restore a verified file to this device; restoration requires a matching system cache layout and an additional confirmation, backs up the current file, and verifies the write. Restart the device afterward.
+
 ## Build it yourself
 
 Both workflows are manual-only (`workflow_dispatch`):
@@ -53,6 +98,23 @@ Both workflows are manual-only (`workflow_dispatch`):
 - **Screenshot GestaltX China Unlock** (`.github/workflows/screenshots.yml`) — builds for the iOS Simulator (iPhone 17) and captures the Tools home, a preset page, and the Confirm Changes page.
 
 The screenshots come from a simulator with no real device document, so they show the "Not read yet" state and a 1-item review — not the 9-item China Unlock summary, which needs a real device.
+
+## Language support
+
+GestaltX follows your iOS language settings, with English as the default and fallback. Persian includes right-to-left layout support.
+
+| Language | Locale |
+| --- | --- |
+| English | `en` |
+| 简体中文 — Simplified Chinese | `zh-Hans` |
+| 繁體中文（台灣）— Traditional Chinese (Taiwan) | `zh-Hant-TW` |
+| 繁體中文（香港）— Traditional Chinese (Hong Kong) | `zh-Hant-HK` |
+| Tiếng Việt — Vietnamese | `vi` |
+| Русский — Russian | `ru` |
+| فارسی — Persian | `fa` |
+| 한국어 — Korean | `ko` |
+| Español — Spanish | `es` |
+| 日本語 — Japanese | `ja` |
 
 ## Open source and license
 
@@ -66,78 +128,22 @@ This project is distributed under the **GNU General Public License v3.0**. See [
 ## Credits
 
 - **huamidev** — GestaltX.
-- **forcequitOS** — [`worse_query`](https://github.com/forcequitOS/worse_query), the sandbox escape that makes on-device MobileGestalt editing possible.
-- **PoomSmart (MGKeys), leminlimez (Nugget), and the other projects listed in the app's Credits & Licenses page.**
+- [forcequitOS / Taj C — worse_query](https://github.com/forcequitOS/worse_query)
+- [neonmodder123](https://github.com/neonmodder123)
+- [skadz108](https://github.com/skadz108)
+- [rooootdev — NeoSpring](https://github.com/rooootdev/neospring)
+- [Nouvborne — Ketamine](https://github.com/Nouvborne/Ketamine)
+- [PoomSmart — MGKeys](https://github.com/PoomSmart/MGKeys)
+- [leminlimez — Nugget](https://github.com/leminlimez/Nugget)
+- [rooootdev — mond](https://github.com/rooootdev/mond)
+- [frs0n — GestaltEdit](https://github.com/frs0n/GestaltEdit)
 
 ## Disclaimer
 
-This is an unofficial modified build, not affiliated with Apple or endorsed by the upstream author. Use it at your own risk. Capability flags do not guarantee features, and modifying system settings can cause instability — read the on-screen warnings before applying anything.
+This is an unofficial modified build, not affiliated with Apple or endorsed by the upstream author. For security research and educational purposes only. Use only on devices you own or are authorized to manage.
 
----
+Back up your data before making changes. Modifying MobileGestalt may cause system instability or require a device restore. Capability flags do not guarantee features. You are responsible for the changes you apply and the resulting risks.
 
-## 这是什么仓库
+## License
 
-这是 GestaltX 国行增强版的**构建仓库**，不 fork 上游源码。每次 CI 都会 checkout 上游 [huamidev/GestaltX](https://github.com/huamidev/GestaltX) 的固定提交 `dfd4a7e`（标签 `v1.0.7`，build `11130112`），应用 `china-unlock-v107.patch`，再构建 IPA。因此完整修改源码永远可以从本仓库复现：官方 v1.0.7 原始源码 + 本仓库的补丁。
-
-## 本版新增内容
-
-- **一键解锁（9 项）。** eSIM 两项开关（green-tea 关、not-green-tea 开）、地区码改美国（`LL`，销售地区不变）、6 项 Apple Intelligence 能力——一次点按全部暂存，确认后应用。
-  - 暂存前会先校验 eSIM 缓存布局；验不过整组停住并显示原因，地区码和 AI 仍可单独设置。
-  - 每次应用都会自动备份并写回校验；一键还原可从记录的原始值恢复全部 9 项。
-- **浅紫 Liquid Glass 全新视觉。** 页面背景 `#F6F3FF`，主紫 `#8652DC`，无大面积深色背景。
-- **每个功能名下都有一句简体中文用途说明。** 33 个预设全覆盖；设备要求与生效方式放在详情里。
-- **作者徽章与进度卡。** 维护者 `@steam8871` 显示在首页与关于页；读取与应用进度（备份 / 写入 / 校验 / 完成）由真实操作驱动，绝不伪造。
-- **开源合规。** 关于页有「开源与鸣谢」，App 内置 GPL v3.0 全文，并链接了本增强版源码仓库。
-
-## 下载
-
-构建好的 IPA 发布在 [Actions](https://github.com/fafa920q-hue/gestaltx-china-unlock-build/actions) 的 Artifacts 里（保留 14 天），找最新一次成功的 `Build GestaltX China Unlock`，下载 `GestaltX_1.0.7_ChinaUnlock`。
-
-- 包名：`com.huami.gestultx`
-- 版本：`1.0.7`（build `11130112`），最低 iOS `26.0`
-- 大小：约 3.6 MB
-
-## 安装
-
-1. 用 [LiveContainer](https://github.com/khanhduytran0/LiveContainer) 安装 IPA——直接运行原始 IPA，无需重签，即可满足 App Group 要求，不需要付费开发者账号。
-2. 打开 GestaltX，先点 **Read Device** 读取本机数据。
-3. 打开 **China Unlock**，确认 9 项内容后应用。
-4. 应用后**重新启动设备**，再去系统「设置」里检查 eSIM 与 Apple Intelligence。
-5. 想全部撤销时用一键还原，会从备份恢复全部 9 项。
-
-## 要求与注意事项
-
-- **需要 eSIM 硬件。** 解锁只改能力开关，不能给没有 eSIM 硬件的设备加上 eSIM。
-- **Apple Intelligence 取决于硬件与苹果服务器。** 打开开关不保证功能一定出现或可用。
-- **运营商与位置规则仍然适用。** 在中国大陆境内无法安装境外 eSIM（苹果规则）；在境外安装通常需要打开定位服务；中国运营商 eSIM 须在中国营业厅激活。
-- **系统更新可能还原改动。** 升级 iOS 后如有需要请重新应用。
-- **不要盲目升级 iOS。** GestaltX 依赖一个未修复的 iOS 沙盒逃逸漏洞（`worse_query`）。苹果可能在未来版本中修掉它；如果你依赖这个工具，升级前请先确认兼容性。
-- **应用前请备份。** App 会自动备份，但另外做一份设备备份仍是好习惯。
-
-## 自己构建
-
-两个工作流均为手动触发（`workflow_dispatch`）：
-
-- **Build GestaltX China Unlock**（`.github/workflows/build-ipa.yml`）——构建并上传 IPA。
-- **Screenshot GestaltX China Unlock**（`.github/workflows/screenshots.yml`）——在 iOS 模拟器（iPhone 17）上构建，截取工具首页、单项预设页、更改确认页三张图。
-
-截图来自没有真实设备文件的模拟器，因此显示「Not read yet」状态，确认页为 1 项预览——不是 9 项解锁摘要，9 项摘要需要真机读取。
-
-## 开源与许可证
-
-本项目遵循 **GNU 通用公共许可证 v3.0** 发布，见 [LICENSE](LICENSE)（与官方 v1.0.7 逐字节相同）。
-
-- 上游项目：[huamidev/GestaltX](https://github.com/huamidev/GestaltX)（`v1.0.7`，提交 `dfd4a7e`）
-- 国行增强版维护者：`@steam8871`
-- 本版修改内容：9 项一键解锁预设及安全检查、浅紫 Liquid Glass 界面、每项功能一句话用途说明、作者徽章与进度卡、App 内源码仓库链接、开源合规栏目。
-- 完整对应源码 = 官方 v1.0.7 原始源码 + 本仓库的 `china-unlock-v107.patch`。
-
-## 鸣谢
-
-- **huamidev**——GestaltX。
-- **forcequitOS**——[`worse_query`](https://github.com/forcequitOS/worse_query)，让设备端修改 MobileGestalt 成为可能的沙盒逃逸。
-- **PoomSmart（MGKeys）、leminlimez（Nugget）** 以及 App 内「Credits & Licenses」页列出的其他项目。
-
-## 免责声明
-
-这是非官方修改版，与苹果公司及上游作者无关，也不代表其立场。使用风险自负。能力开关不保证功能可用，修改系统设置可能导致不稳定——应用前请阅读屏幕上的提示。
+[GNU GPL v3](LICENSE) · Copyright © 2026 huamidev. China Unlock enhancements maintained by `@steam8871`.
