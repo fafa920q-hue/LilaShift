@@ -1,0 +1,55 @@
+name: Build GestaltX China Unlock
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ipa:
+    runs-on: xcode-27
+    timeout-minutes: 40
+    steps:
+      - name: Check out the private build inputs
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check out GestaltX v1.0.6
+        uses: actions/checkout@v7
+        with:
+          repository: huamidev/GestaltX
+          ref: 72f46754820991c5c7706afce9573b117aadbae7
+          path: upstream
+          persist-credentials: false
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Apply the changes and verify localizations
+        working-directory: upstream
+        run: |
+          git apply --check ../china-unlock.patch
+          git apply ../china-unlock.patch
+          python3 -X utf8 scripts/generate_localization.py
+          python3 -X utf8 tests/LocalizationTests.py
+
+      - name: Build and verify the IPA
+        working-directory: upstream
+        run: |
+          xcodebuild -version
+          .github/scripts/build-ipa.sh "$RUNNER_TEMP/gestaltx-ipa"
+          mv "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.6.ipa" "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.6_ChinaUnlock.ipa"
+          unzip -tq "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.6_ChinaUnlock.ipa"
+
+      - name: Upload the IPA
+        uses: actions/upload-artifact@v7
+        with:
+          name: GestaltX_1.0.6_ChinaUnlock
+          path: ${{ runner.temp }}/gestaltx-ipa/GestaltX_1.0.6_ChinaUnlock.ipa
+          if-no-files-found: error
+          retention-days: 14
