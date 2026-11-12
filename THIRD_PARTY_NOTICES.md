@@ -33,6 +33,22 @@ The original upstream v1.0.7 `THIRD_PARTY_NOTICES.md` identifies, among others:
 
 本文件是补充说明，不能代替原始源码中的版权标头、上游第三方声明或 App 包内需随附的许可证文件。每次更新依赖项或替换资源，都必须重新核对授权。
 
+## Erosion-CN references in the **unreleased development patch** / 当前开发补丁中的 Erosion-CN 来源
+
+The **current main branch development patch** (which is *not* identical to the already-published v1.0.7 release patch) documents work adapted from or informed by **[Kianuni/Erosion-CN](https://github.com/Kianuni/Erosion-CN)**, a GPL-3.0 derivative of **[jailbreakdotparty/Erosion](https://github.com/jailbreakdotparty/Erosion)**.
+
+- `GestaltX/DevicePlistWriter.swift`: source comment says the in-place-write approach is adapted from Erosion-CN's `writeFileAtomically` concept.
+- `GestaltX/AIReadinessCheckup.swift`: source comment credits Erosion-CN's Apple Intelligence checkup idea.
+- `GestaltX/DeviceAIEligibility.swift`: device eligibility identifiers are transcribed and independently implemented from Erosion-CN's `isAppleIntellHD` list.
+- `GestaltX/USRegulatoryModelMapping.swift`: regulatory model number mappings are transcribed and reimplemented with Erosion-CN as the recorded source.
+
+**Author / Maintainer:** Kianuni and Erosion-CN contributors; upstream Erosion authors are credited separately.  
+**License:** GPL-3.0. This is a source attribution, **not** a claim that all the above files have undergone a line-by-line copying/license audit or that these features are included in the original v1.0.7 IPA. The enhanced app must include this attribution in its in-app Credits/About page before a new release.
+
+当前 `main` 的扩展补丁明确记录了以上借鉴或来源。原 Erosion、Erosion-CN 与 GestaltX 应分别保留贡献记录；**旧版发布附件并不自动具备当前开发补丁中的所有新增功能**。
+
+Additional licenses already credited in the pinned upstream GestaltX app include **Gester (MIT)** and **ZIPFoundation (MIT)**, with their bundled license texts at `GestaltX/Licenses/Gester-MIT.txt` and `GestaltX/Licenses/ZIPFoundation-MIT.txt`. Preserve these as applicable.
+
 ## No endorsement / 非官方声明
 
 No endorsement, sponsorship or affiliation by **huamidev**, upstream contributors, Apple Inc., or third-party projects is implied. The original name and credits are used to identify the upstream project; avoid representing this release as an official version.
