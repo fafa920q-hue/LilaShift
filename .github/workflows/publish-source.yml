@@ -45,8 +45,7 @@ jobs:
           cmp dist/china-unlock-v107.patch china-unlock-v107.patch
           git -C upstream apply --check ../dist/china-unlock-v107.patch
           git -C upstream apply ../dist/china-unlock-v107.patch
-          python3 -X utf8 upstream/scripts/generate_localization.py
-          python3 -X utf8 upstream/tests/LocalizationTests.py
+          (cd upstream && python3 -X utf8 scripts/generate_localization.py && python3 -X utf8 tests/LocalizationTests.py)
           mkdir -p upstream/Distribution
           cp dist/china-unlock-v107.patch upstream/Distribution/china-unlock-v107.patch
           cp LICENSE SOURCE_AND_BUILD.md THIRD_PARTY_NOTICES.md RELEASE_CHECKLIST.md RELEASE_NOTES_v1.0.7-china-unlock.md upstream/Distribution/
