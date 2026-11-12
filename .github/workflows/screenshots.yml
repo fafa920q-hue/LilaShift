@@ -1,0 +1,121 @@
+# Screenshot GestaltX 1.0.7 China Unlock (three pages)
+#
+# Copy this file to fafa920q-hue/gestaltx-china-unlock-build as
+# .github/workflows/screenshots.yml, together with china-unlock-v107.patch
+# at the repository root. It builds the v1.0.7 China Unlock app from
+# upstream huamidev/GestaltX at dfd4a7e (tag v1.0.7, build 11130112),
+# installs it on an iPhone 17 Pro simulator and captures the three pages
+# with the app's existing simulator-only launch arguments
+# (--preview-tab, --preview-category, --preview-review):
+#   1-tools-home.png        Tools home
+#   2-screen-lock.png       Screen & Lock Screen preset page (Display group)
+#   3-confirm-changes.png   Confirm Changes page (review sheet)
+#
+# Untested: this workflow has never run (no macOS runner on Linux).
+# Known limits, read before trusting the screenshots:
+# - The simulator has no real device document and the repository has no
+#   sample MobileGestalt plist, so the home and preset pages show the
+#   "Not read yet" state, not a read device.
+# - The confirmation screenshot shows the review sheet with the staged
+#   pencil preset (1 field changed), NOT the 9-item China Unlock summary:
+#   staging the unlock needs a valid device plist with a verifiable eSIM
+#   cache layout, which the simulator cannot provide. No new launch hook
+#   was added for it; the gap is documented, not faked.
+# - If the runner has no iPhone 17 Pro simulator runtime, the capture
+#   step fails with the device list printed; adjust the device name.
+name: Screenshot GestaltX China Unlock
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: macOS simulator runner
+        type: choice
+        options: [macos-26, xcode-27]
+        default: xcode-27
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ${{ inputs.runner || 'xcode-27' }}
+    timeout-minutes: 40
+    steps:
+      - name: Check out the private build inputs
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check out GestaltX v1.0.7
+        uses: actions/checkout@v7
+        with:
+          repository: huamidev/GestaltX
+          ref: dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f
+          path: upstream
+          persist-credentials: false
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Apply the changes and verify localizations
+        working-directory: upstream
+        run: |
+          git apply --check ../china-unlock-v107.patch
+          git apply ../china-unlock-v107.patch
+          python3 -X utf8 scripts/generate_localization.py
+          python3 -X utf8 tests/LocalizationTests.py
+
+      - name: Build for the iOS Simulator
+        working-directory: upstream
+        run: |
+          xcodebuild -version
+          if [[ "$(xcodebuild -version | head -n 1)" == "Xcode 26."* ]]; then
+            sed -i '' 's/objectVersion = 110;/objectVersion = 77;/' GestaltX.xcodeproj/project.pbxproj
+          fi
+          xcodebuild -project GestaltX.xcodeproj \
+            -target GestaltX \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -derivedDataPath "$RUNNER_TEMP/derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+          test -d "$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/GestaltX.app"
+
+      - name: Capture the three pages
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/GestaltX.app"
+          UDID="$(xcrun simctl list devices available | grep -m1 'iPhone 17 Pro' | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')"
+          if [[ -z "$UDID" ]]; then
+            echo "iPhone 17 Pro simulator not found on this runner."
+            xcrun simctl list devices available
+            exit 1
+          fi
+          xcrun simctl boot "$UDID" 2>/dev/null || true
+          xcrun simctl bootstatus "$UDID" -b
+          mkdir -p "$RUNNER_TEMP/shots"
+          xcrun simctl install "$UDID" "$APP"
+          # 1. Tools home (--preview-tab also suppresses the welcome sheet)
+          xcrun simctl launch "$UDID" com.huami.gestultx --preview-tab 0
+          sleep 10
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/1-tools-home.png"
+          xcrun simctl terminate "$UDID" com.huami.gestultx || true
+          # 2. Preset page: Screen & Lock Screen (Display group sheet)
+          xcrun simctl launch "$UDID" com.huami.gestultx --preview-tab 0 --preview-category Display
+          sleep 10
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/2-screen-lock.png"
+          xcrun simctl terminate "$UDID" com.huami.gestultx || true
+          # 3. Confirm Changes page (review sheet; stages the pencil preset)
+          xcrun simctl launch "$UDID" com.huami.gestultx --preview-tab 0 --preview-review
+          sleep 10
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/3-confirm-changes.png"
+
+      - name: Upload the screenshots
+        uses: actions/upload-artifact@v7
+        with:
+          name: GestaltX_1.0.7_ChinaUnlock_Screenshots
+          path: ${{ runner.temp }}/shots/*.png
+          if-no-files-found: error
+          retention-days: 14
