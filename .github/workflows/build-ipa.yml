@@ -1,3 +1,11 @@
+# Build GestaltX 1.0.7 China Unlock
+#
+# Copy this file to fafa920q-hue/gestaltx-china-unlock-build as
+# .github/workflows/build-ipa.yml, together with china-unlock-v107.patch
+# at the repository root. It builds the v1.0.7 China Unlock IPA from
+# upstream huamidev/GestaltX at dfd4a7e (tag v1.0.7, build 11130112).
+# Adapted from the 1.0.6 workflow in the same repository: only the
+# upstream ref, the patch file name and the IPA/artifact names changed.
 name: Build GestaltX China Unlock
 on:
   push:
@@ -23,11 +31,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check out GestaltX v1.0.6
+      - name: Check out GestaltX v1.0.7
         uses: actions/checkout@v7
         with:
           repository: huamidev/GestaltX
-          ref: 72f46754820991c5c7706afce9573b117aadbae7
+          ref: dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f
           path: upstream
           persist-credentials: false
 
@@ -39,8 +47,8 @@ jobs:
       - name: Apply the changes and verify localizations
         working-directory: upstream
         run: |
-          git apply --check ../china-unlock.patch
-          git apply ../china-unlock.patch
+          git apply --check ../china-unlock-v107.patch
+          git apply ../china-unlock-v107.patch
           python3 -X utf8 scripts/generate_localization.py
           python3 -X utf8 tests/LocalizationTests.py
 
@@ -52,13 +60,13 @@ jobs:
             sed -i '' 's/objectVersion = 110;/objectVersion = 77;/' GestaltX.xcodeproj/project.pbxproj
           fi
           .github/scripts/build-ipa.sh "$RUNNER_TEMP/gestaltx-ipa"
-          mv "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.6.ipa" "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.6_ChinaUnlock_Optimized.ipa"
-          unzip -tq "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.6_ChinaUnlock_Optimized.ipa"
+          mv "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.7.ipa" "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.7_ChinaUnlock.ipa"
+          unzip -tq "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.7_ChinaUnlock.ipa"
 
       - name: Upload the IPA
         uses: actions/upload-artifact@v7
         with:
-          name: GestaltX_1.0.6_ChinaUnlock_Optimized
-          path: ${{ runner.temp }}/gestaltx-ipa/GestaltX_1.0.6_ChinaUnlock_Optimized.ipa
+          name: GestaltX_1.0.7_ChinaUnlock
+          path: ${{ runner.temp }}/gestaltx-ipa/GestaltX_1.0.7_ChinaUnlock.ipa
           if-no-files-found: error
           retention-days: 14
