@@ -1,10 +1,10 @@
 # LilaShift（紫序）分阶段实施方案 / Implementation Plan
 
-目标：将现有 **GestaltX v1.0.7 + LilaShift 补丁** 升级成有明确来源、可测试、可恢复的 iOS 设备配置与诊断工具。**不覆盖任何正式 Release / IPA**；只通过开发分支、草稿 PR、明确的版本标签发布。
+目标：将现有 **GestaltX 固定开发提交 `c60519c` + LilaShift 当前补丁** 升级成有明确来源、可测试、可恢复的 iOS 设备配置与诊断工具。**不覆盖任何正式 Release / IPA**；只通过开发分支、草稿 PR、明确的版本标签发布。
 
 ## 0. 发布治理与分支
 
-- 当前发布标签 `v1.0.7-china-unlock`：冻结，继续保留原 IPA 和对应源码包。
+- 当前发布标签 `v1.0.7-china-unlock`：冻结，继续保留原 IPA 和对应源码包（基于上游 `dfd4a7e`）。当前开发构建使用另一个固定上游提交 `c60519c619ced032a0b174c13062b3b9bc9ee86f`，两个源码输入不可混淆。
 - 开发基线：当前 `main`（含尚未作为旧 IPA 发出的新版补丁），立即新建 `dev/*` 分支开发。
 - 后续建议第一个新版本：`v1.1.0-beta.1`，展示品牌 **LilaShift / 紫序**；**只有 P0 风险解除后才允许真机测试构建进入 Release**。
 - 源码仓库现在是 [fafa920q-hue/LilaShift](https://github.com/fafa920q-hue/LilaShift)；遗留 GitHub 链接更新应在新版本分支进行，不能让旧标签指向新构建输入。
@@ -70,7 +70,7 @@
 
 ## 5. 测试和发布门禁（按序推进）
 
-1. **Linux 静态检查**：固定上游 SHA，`git apply --check`；检查合规文件与构建输入，单独审查二进制补丁和外部素材来源。
+1. **Linux 静态检查**：开发版使用 `c60519c619ced032a0b174c13062b3b9bc9ee86f`，运行 `git apply --check`；旧版只核对 `dfd4a7e` + 旧标签补丁；检查合规文件与构建输入，单独审查二进制补丁和外部素材来源。
 2. **macOS 单元测试**：现有 `DocumentTests`、`CacheLayoutGatingTests`、`DevicePlistWriterTests`、`SystemVaultTests`、`AIReadinessTests`、本地化测试；故障注入作为新增必测项目。
 3. **Xcode 模拟器**：编译 Debug/Release 与分享扩展；测试 UI、手动中英文切换、导入/导出和无权限退化；不模拟真实的 MobileGestalt 生效结论。
 4. **真实设备小范围测试**：分型号及 iOS build；初次启动、普通读取、功能暂存、应用、冷重启、读回、恢复、卸载重装及权限变化；测试前独立完整备份。
