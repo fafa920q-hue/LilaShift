@@ -1,17 +1,17 @@
 # LilaShift（紫序）源码审查报告 — 2026-11-13
 
-> 状态：**静态审查 / 待编译及真机验证**。本报告审查了本仓库 main 的 `china-unlock-v107.patch`，以及 [huamidev/GestaltX v1.0.7](https://github.com/huamidev/GestaltX/tree/dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f)、[Kianuni/Erosion-CN](https://github.com/Kianuni/Erosion-CN)、[Nugget](https://github.com/leminlimez/Nugget) 和 [MGKeys](https://github.com/PoomSmart/MGKeys) 的公开代码/许可证。未在本报告阶段构建 IPA、未在真实 iPhone 上写入系统文件，也未更改正式 Release。
+> 状态：**静态审查 / 待本轮独立编译及真机验证**。本报告审查了本仓库 main 的 `china-unlock-v107.patch`，以及 **当前开发构建固定使用的** [huamidev/GestaltX 提交 c60519c](https://github.com/huamidev/GestaltX/tree/c60519c619ced032a0b174c13062b3b9bc9ee86f)、[Kianuni/Erosion-CN](https://github.com/Kianuni/Erosion-CN)、[Nugget](https://github.com/leminlimez/Nugget) 和 [MGKeys](https://github.com/PoomSmart/MGKeys) 的公开代码/许可证。未在本报告阶段构建 IPA、未在真实 iPhone 上写入系统文件，也未更改正式 Release。
 
 ## 一、基线、版本与两个开源来源
 
-- 主工程：**GestaltX**，原作者 **huamidev**，版本 v1.0.7，固定提交 `dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f`，许可证 **GPL-3.0**。
+- 主工程：**GestaltX**，原作者 **huamidev**，许可证 **GPL-3.0**。**当前开发版**固定使用 `Build LilaShift` 工作流中的提交 `c60519c619ced032a0b174c13062b3b9bc9ee86f`（官方 `v1.0.7` 标签之后的提交）；**旧正式版**使用 `dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f`。不可混用。
 - 第二个重点来源：**Erosion-CN**，维护者 **Kianuni**，其上游为 **jailbreakdotparty/Erosion**，许可证 **GPL-3.0**。现有补丁在 `AIReadinessCheckup.swift`、`DevicePlistWriter.swift`、`DeviceAIEligibility.swift`、`USRegulatoryModelMapping.swift` 等位置明确注明借鉴 Erosion-CN 的设计、设备列表或映射。**这不等于对所有实现做过逐行独立性核验**。
 - GestaltX 原版本身已经在 `AboutView.swift` 和 App 内 `Licenses/Erosion-GPL-3.0.txt` 给原版 **Erosion** 做许可证鸣谢。**原版 Erosion** 与 **Kianuni 的 Erosion-CN 衍生版** 应分别追溯，不可混淆来源。
 - **MGKeys**：MIT，适合键名映射研究；若引入受保护的实质性代码/数据，应保留 MIT 版权和许可证文本。
 - **Nugget**：AGPL-3.0；当前建议只学习交互、模块划分与测试策略，不直接复制 AGPL 代码到此 GPLv3 工程。任何实质性代码合并应先单独评估 GPLv3 §13 / AGPLv3 相关义务。
 - LilaShift 增强版维护者为 **@steam8871**；不得把 huamidev、Kianuni 或其他贡献者的代码标为自己的原创。
 
-**版本隔离重要事实：** 当前 `main` 分支的 `china-unlock-v107.patch` 已显著不同于旧版 `v1.0.7-china-unlock` 发布标签中的补丁（Git blob SHA 分别为 `ba46079a66d110bf1bf68ae708815928400eec25` 与 `9593bb9ea27083affc463efc09557c2a0c81ce8b`）。**不能声称现在 main 的新能力已经包含在旧版 IPA 中**。原有 v1.0.7 Release 与 IPA 不得改写为新的测试版。
+**版本隔离重要事实：** 当前 `main` 使用 **upstream `c60519c` + 开发补丁 `ba46079a...`**；旧版 `v1.0.7-china-unlock` 发布标签使用 **upstream `dfd4a7e` + 旧补丁 `9593bb9...`**。两个补丁不同（Git blob SHA 完整值分别为 `ba46079a66d110bf1bf68ae708815928400eec25` 与 `9593bb9ea27083affc463efc09557c2a0c81ce8b`）。**不能声称现在 main 的新能力已经包含在旧版 IPA 中**。原有 v1.0.7 Release 与 IPA 不得改写为新的测试版。
 
 ## 二、现有实现（来自当前 main 补丁和固定上游源码）
 
@@ -66,7 +66,7 @@
 ## 五、审查完成程度与限制
 
 - **已完成：** 公开源码/许可证核对、原版核心架构抽查、当前补丁的文件清单、关键风险代码静态阅读。
-- **尚未完成：** 完整 3MB+ 补丁所有更改逐行审查、Swift 编译、CI 执行结果、IPA 二进制溯源、签名与 App Group 实测、真机写入/恢复及断电测试。
+- **尚未完成：** 完整 3MB+ 补丁所有更改逐行审查、本轮 PR 的独立 Swift 编译、IPA 二进制溯源、签名与 App Group 实测、真机写入/恢复及断电测试。历史上 `Build LilaShift` 曾成功，但不代表本报告已完成独立验证。
 - 任何“完全防白苹果”“100% 兼容”“真正原厂恢复”等绝对性宣传都必须暂停，直到有匹配的验证证据。
 
 后续实施以 [实施路线图](LILASHIFT_IMPLEMENTATION_PLAN.md) 和 [双上游来源清单](LILASHIFT_PROVENANCE.md) 为准。
