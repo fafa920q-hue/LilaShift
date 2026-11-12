@@ -1,12 +1,14 @@
-# Build GestaltX 1.0.7 China Unlock
+# Build LilaShift 1.0.7
 #
-# Copy this file to fafa920q-hue/gestaltx-china-unlock-build as
+# Copy this file to fafa920q-hue/LilaShift as
 # .github/workflows/build-ipa.yml, together with china-unlock-v107.patch
-# at the repository root. It builds the v1.0.7 China Unlock IPA from
-# upstream huamidev/GestaltX at dfd4a7e (tag v1.0.7, build 11130112).
+# at the repository root. It builds the LilaShift 1.0.7 IPA from
+# upstream huamidev/GestaltX at c60519c (main, includes PR #126 which
+# fixes deleting imported wallpaper packages; tag v1.0.7 is dfd4a7e,
+# build 11130112).
 # Adapted from the 1.0.6 workflow in the same repository: only the
 # upstream ref, the patch file name and the IPA/artifact names changed.
-name: Build GestaltX China Unlock
+name: Build LilaShift
 # Manual-only: workflow_dispatch. (A push trigger was here before and
 # caused runs #5-#7 to auto-trigger on every patch upload; removed.)
 on:
@@ -31,11 +33,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check out GestaltX v1.0.7
+      - name: Check out GestaltX (LilaShift base)
         uses: actions/checkout@v7
         with:
           repository: huamidev/GestaltX
-          ref: dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f
+          ref: c60519c619ced032a0b174c13062b3b9bc9ee86f
           path: upstream
           persist-credentials: false
 
@@ -60,13 +62,13 @@ jobs:
             sed -i '' 's/objectVersion = 110;/objectVersion = 77;/' GestaltX.xcodeproj/project.pbxproj
           fi
           .github/scripts/build-ipa.sh "$RUNNER_TEMP/gestaltx-ipa"
-          mv "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.7.ipa" "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.7_ChinaUnlock.ipa"
-          unzip -tq "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.7_ChinaUnlock.ipa"
+          mv "$RUNNER_TEMP/gestaltx-ipa/GestaltX_1.0.7.ipa" "$RUNNER_TEMP/gestaltx-ipa/LilaShift_1.0.7.ipa"
+          unzip -tq "$RUNNER_TEMP/gestaltx-ipa/LilaShift_1.0.7.ipa"
 
       - name: Upload the IPA
         uses: actions/upload-artifact@v7
         with:
-          name: GestaltX_1.0.7_ChinaUnlock
-          path: ${{ runner.temp }}/gestaltx-ipa/GestaltX_1.0.7_ChinaUnlock.ipa
+          name: LilaShift_1.0.7
+          path: ${{ runner.temp }}/gestaltx-ipa/LilaShift_1.0.7.ipa
           if-no-files-found: error
           retention-days: 14

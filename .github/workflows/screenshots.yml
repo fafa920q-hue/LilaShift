@@ -1,9 +1,10 @@
-# Screenshot GestaltX 1.0.7 China Unlock (three pages)
+# Screenshot LilaShift 1.0.7 (three pages)
 #
-# Copy this file to fafa920q-hue/gestaltx-china-unlock-build as
+# Copy this file to fafa920q-hue/LilaShift as
 # .github/workflows/screenshots.yml, together with china-unlock-v107.patch
-# at the repository root. It builds the v1.0.7 China Unlock app from
-# upstream huamidev/GestaltX at dfd4a7e (tag v1.0.7, build 11130112),
+# at the repository root. It builds the LilaShift 1.0.7 app from
+# upstream huamidev/GestaltX at c60519c (main, includes PR #126;
+# tag v1.0.7 is dfd4a7e, build 11130112),
 # installs it on an iPhone 17 simulator and captures the three pages
 # with the app's existing simulator-only launch arguments
 # (--preview-tab, --preview-category, --preview-review):
@@ -32,7 +33,7 @@
 #   available iPhones are 17, 17e, 18 Pro, 18 Pro Max, iPhone Air,
 #   iPhone Duo on OS 27.0/27.2. iPhone 17 is the same 6.3-inch size
 #   class as iPhone 17 Pro, so it is the closest substitute.)
-name: Screenshot GestaltX China Unlock
+name: Screenshot LilaShift
 on:
   workflow_dispatch:
     inputs:
@@ -55,11 +56,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check out GestaltX v1.0.7
+      - name: Check out GestaltX (LilaShift base)
         uses: actions/checkout@v7
         with:
           repository: huamidev/GestaltX
-          ref: dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f
+          ref: c60519c619ced032a0b174c13062b3b9bc9ee86f
           path: upstream
           persist-credentials: false
 
@@ -128,7 +129,7 @@ jobs:
       - name: Upload the screenshots
         uses: actions/upload-artifact@v7
         with:
-          name: GestaltX_1.0.7_ChinaUnlock_Screenshots
+          name: LilaShift_1.0.7_Screenshots
           path: ${{ runner.temp }}/shots/*.png
           if-no-files-found: error
           retention-days: 14
