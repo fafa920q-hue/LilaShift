@@ -4,7 +4,7 @@
 >
 > 国行 iPhone 一键解锁：eSIM、地区码、Apple Intelligence，一次点按完成。基于官方 GestaltX v1.0.7 构建。
 
-English | [简体中文](#简体中文)
+English | [简体中文](#这是什么仓库)
 
 ## What this repository is
 
@@ -75,13 +75,11 @@ This is an unofficial modified build, not affiliated with Apple or endorsed by t
 
 ---
 
-## 简体中文
-
-### 这是什么仓库
+## 这是什么仓库
 
 这是 GestaltX 国行增强版的**构建仓库**，不 fork 上游源码。每次 CI 都会 checkout 上游 [huamidev/GestaltX](https://github.com/huamidev/GestaltX) 的固定提交 `dfd4a7e`（标签 `v1.0.7`，build `11130112`），应用 `china-unlock-v107.patch`，再构建 IPA。因此完整修改源码永远可以从本仓库复现：官方 v1.0.7 原始源码 + 本仓库的补丁。
 
-### 本版新增内容
+## 本版新增内容
 
 - **一键解锁（9 项）。** eSIM 两项开关（green-tea 关、not-green-tea 开）、地区码改美国（`LL`，销售地区不变）、6 项 Apple Intelligence 能力——一次点按全部暂存，确认后应用。
   - 暂存前会先校验 eSIM 缓存布局；验不过整组停住并显示原因，地区码和 AI 仍可单独设置。
@@ -91,7 +89,7 @@ This is an unofficial modified build, not affiliated with Apple or endorsed by t
 - **作者徽章与进度卡。** 维护者 `@steam8871` 显示在首页与关于页；读取与应用进度（备份 / 写入 / 校验 / 完成）由真实操作驱动，绝不伪造。
 - **开源合规。** 关于页有「开源与鸣谢」，App 内置 GPL v3.0 全文，并链接了本增强版源码仓库。
 
-### 下载
+## 下载
 
 构建好的 IPA 发布在 [Actions](https://github.com/fafa920q-hue/gestaltx-china-unlock-build/actions) 的 Artifacts 里（保留 14 天），找最新一次成功的 `Build GestaltX China Unlock`，下载 `GestaltX_1.0.7_ChinaUnlock`。
 
@@ -99,7 +97,7 @@ This is an unofficial modified build, not affiliated with Apple or endorsed by t
 - 版本：`1.0.7`（build `11130112`），最低 iOS `26.0`
 - 大小：约 3.6 MB
 
-### 安装
+## 安装
 
 1. 用 [LiveContainer](https://github.com/khanhduytran0/LiveContainer) 安装 IPA——直接运行原始 IPA，无需重签，即可满足 App Group 要求，不需要付费开发者账号。
 2. 打开 GestaltX，先点 **Read Device** 读取本机数据。
@@ -107,7 +105,7 @@ This is an unofficial modified build, not affiliated with Apple or endorsed by t
 4. 应用后**重新启动设备**，再去系统「设置」里检查 eSIM 与 Apple Intelligence。
 5. 想全部撤销时用一键还原，会从备份恢复全部 9 项。
 
-### 要求与注意事项
+## 要求与注意事项
 
 - **需要 eSIM 硬件。** 解锁只改能力开关，不能给没有 eSIM 硬件的设备加上 eSIM。
 - **Apple Intelligence 取决于硬件与苹果服务器。** 打开开关不保证功能一定出现或可用。
@@ -116,7 +114,7 @@ This is an unofficial modified build, not affiliated with Apple or endorsed by t
 - **不要盲目升级 iOS。** GestaltX 依赖一个未修复的 iOS 沙盒逃逸漏洞（`worse_query`）。苹果可能在未来版本中修掉它；如果你依赖这个工具，升级前请先确认兼容性。
 - **应用前请备份。** App 会自动备份，但另外做一份设备备份仍是好习惯。
 
-### 自己构建
+## 自己构建
 
 两个工作流均为手动触发（`workflow_dispatch`）：
 
@@ -125,7 +123,7 @@ This is an unofficial modified build, not affiliated with Apple or endorsed by t
 
 截图来自没有真实设备文件的模拟器，因此显示「Not read yet」状态，确认页为 1 项预览——不是 9 项解锁摘要，9 项摘要需要真机读取。
 
-### 开源与许可证
+## 开源与许可证
 
 本项目遵循 **GNU 通用公共许可证 v3.0** 发布，见 [LICENSE](LICENSE)（与官方 v1.0.7 逐字节相同）。
 
@@ -134,12 +132,12 @@ This is an unofficial modified build, not affiliated with Apple or endorsed by t
 - 本版修改内容：9 项一键解锁预设及安全检查、浅紫 Liquid Glass 界面、每项功能一句话用途说明、作者徽章与进度卡、App 内源码仓库链接、开源合规栏目。
 - 完整对应源码 = 官方 v1.0.7 原始源码 + 本仓库的 `china-unlock-v107.patch`。
 
-### 鸣谢
+## 鸣谢
 
 - **huamidev**——GestaltX。
 - **forcequitOS**——[`worse_query`](https://github.com/forcequitOS/worse_query)，让设备端修改 MobileGestalt 成为可能的沙盒逃逸。
 - **PoomSmart（MGKeys）、leminlimez（Nugget）** 以及 App 内「Credits & Licenses」页列出的其他项目。
 
-### 免责声明
+## 免责声明
 
 这是非官方修改版，与苹果公司及上游作者无关，也不代表其立场。使用风险自负。能力开关不保证功能可用，修改系统设置可能导致不稳定——应用前请阅读屏幕上的提示。
