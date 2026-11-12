@@ -7,9 +7,9 @@
 # Adapted from the 1.0.6 workflow in the same repository: only the
 # upstream ref, the patch file name and the IPA/artifact names changed.
 name: Build GestaltX China Unlock
+# Manual-only: workflow_dispatch. (A push trigger was here before and
+# caused runs #5-#7 to auto-trigger on every patch upload; removed.)
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       runner:
