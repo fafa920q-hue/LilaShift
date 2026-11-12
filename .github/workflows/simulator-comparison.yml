@@ -106,7 +106,7 @@ jobs:
 
           capture_version() {
             version="$1"
-            xcrun simctl install "$COMPARISON_SIM" "$app"
+            xcrun simctl install "$COMPARISON_SIM" "$2"
             data="$(xcrun simctl get_app_container "$COMPARISON_SIM" "$bundle" data)"
             mkdir -p "$data/Documents"
             fixture="$data/Documents/Comparison.plist"
@@ -120,22 +120,27 @@ jobs:
 
           echo "Building official v1.0.6 for the simulator"
           build
-          xcrun simctl boot "$COMPARISON_SIM"
-          xcrun simctl bootstatus "$COMPARISON_SIM" -b
-          xcrun simctl ui "$COMPARISON_SIM" appearance light
-          xcrun simctl status_bar "$COMPARISON_SIM" override --time "9:41" --dataNetwork wifi \
-            --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 \
-            --batteryState unplugged --batteryLevel 100
-          capture_version original
+          original="$RUNNER_TEMP/Original-GestaltX.app"
+          ditto "$app" "$original"
 
           git apply --check ../china-unlock.patch
           git apply ../china-unlock.patch
           echo "Building the optimized version for the simulator"
           build
-          capture_version optimized
+
+          echo "Booting the simulator"
+          xcrun simctl boot "$COMPARISON_SIM"
+          xcrun simctl bootstatus "$COMPARISON_SIM" -b
           xcrun simctl list devices booted > "$screens/simulator.txt"
+          xcrun simctl ui "$COMPARISON_SIM" appearance light || true
+          xcrun simctl status_bar "$COMPARISON_SIM" override --time "9:41" || true
+          echo "Capturing the official version"
+          capture_version original "$original"
+          echo "Capturing the optimized version"
+          capture_version optimized "$app"
 
       - name: Upload simulator screenshots
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: gestaltx-simulator-screens
