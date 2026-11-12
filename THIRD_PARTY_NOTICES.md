@@ -2,6 +2,8 @@
 
 This repository distributes an unofficial modified build of **GestaltX**, based on [huamidev/GestaltX](https://github.com/huamidev/GestaltX) **v1.0.7**, commit `dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f`.
 
+**Build-input distinction:** the published historical `v1.0.7-china-unlock` IPA uses upstream `dfd4a7e` plus its tagged patch. The current unshipped LilaShift development build uses upstream **`c60519c619ced032a0b174c13062b3b9bc9ee86f`** plus the newer `main` patch. Do **not** assert the two builds contain identical source.
+
 本仓库分发的 IPA 是 GestaltX 的**非官方修改版**，并非原作者的官方发行包。
 
 ## Original application / 原始应用
@@ -17,7 +19,7 @@ This repository distributes an unofficial modified build of **GestaltX**, based 
 - Maintainer of this modified build: **@steam8871** (credited for these changes, **not** as the sole author of GestaltX)
 - Modifications: China Unlock presets and validation, settings UI styling, descriptions, build integration, restore/backup and related UX as detailed in [README_ZH-CN.md](README_ZH-CN.md)
 - Patch: [china-unlock-v107.patch](china-unlock-v107.patch)
-- Effective source: upstream commit **dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f** plus this patch
+- **Published v1.0.7 source**: upstream commit **dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f** plus the **tagged** release patch. **Unshipped LilaShift development source**: upstream **c60519c619ced032a0b174c13062b3b9bc9ee86f** plus the **current main** patch. See [provenance matrix](docs/LILASHIFT_PROVENANCE.md).
 - Distribution of the modified combined work remains under **GNU GPL v3**, subject to the individual notices applicable to each included component.
 
 ## Important upstream third-party notices / 必须保留的上游声明
