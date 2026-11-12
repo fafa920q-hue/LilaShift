@@ -4,7 +4,7 @@
 # .github/workflows/screenshots.yml, together with china-unlock-v107.patch
 # at the repository root. It builds the v1.0.7 China Unlock app from
 # upstream huamidev/GestaltX at dfd4a7e (tag v1.0.7, build 11130112),
-# installs it on an iPhone 17 Pro simulator and captures the three pages
+# installs it on an iPhone 17 simulator and captures the three pages
 # with the app's existing simulator-only launch arguments
 # (--preview-tab, --preview-category, --preview-review):
 #   1-tools-home.png        Tools home
@@ -25,9 +25,13 @@
 #   (GestaltX.xcodeproj/xcshareddata/xcschemes/GestaltX.xcscheme) so the
 #   build uses -scheme, which is required together with -derivedDataPath
 #   (Xcode 27.2 rejects -target with -derivedDataPath, exit 64).
-# - A step prints the available simulators so the log shows whether an
-#   iPhone 17 Pro simulator exists on the runner; the capture step still
-#   fails loudly with the device list if it is missing.
+# - A step prints the available simulators before the build so the log
+#   shows whether an iPhone 17 simulator exists on the runner; the
+#   capture step still fails loudly with the device list if it is missing.
+#   (Run #2 failed with exit 70 because the runner has no iPhone 17 Pro:
+#   available iPhones are 17, 17e, 18 Pro, 18 Pro Max, iPhone Air,
+#   iPhone Duo on OS 27.0/27.2. iPhone 17 is the same 6.3-inch size
+#   class as iPhone 17 Pro, so it is the closest substitute.)
 name: Screenshot GestaltX China Unlock
 on:
   workflow_dispatch:
@@ -72,6 +76,10 @@ jobs:
           python3 -X utf8 scripts/generate_localization.py
           python3 -X utf8 tests/LocalizationTests.py
 
+      - name: List available simulators
+        run: |
+          xcrun simctl list devices available
+
       - name: Build for the iOS Simulator
         working-directory: upstream
         run: |
@@ -82,23 +90,19 @@ jobs:
           xcodebuild -project GestaltX.xcodeproj \
             -scheme GestaltX \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
             -derivedDataPath "$RUNNER_TEMP/derived" \
             CODE_SIGNING_ALLOWED=NO \
             build
           test -d "$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/GestaltX.app"
 
-      - name: List available simulators
-        run: |
-          xcrun simctl list devices available
-
       - name: Capture the three pages
         run: |
           set -euo pipefail
           APP="$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/GestaltX.app"
-          UDID="$(xcrun simctl list devices available | grep -m1 'iPhone 17 Pro' | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')"
+          UDID="$(xcrun simctl list devices available | grep -m1 'iPhone 17 (' | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')"
           if [[ -z "$UDID" ]]; then
-            echo "iPhone 17 Pro simulator not found on this runner."
+            echo "iPhone 17 simulator not found on this runner."
             xcrun simctl list devices available
             exit 1
           fi
