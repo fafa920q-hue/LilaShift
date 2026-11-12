@@ -82,6 +82,44 @@ Some users report incomplete downloads with Safari on iOS 27. If the file is rep
 - **Do not update iOS blindly.** GestaltX relies on an unpatched iOS sandbox-escape vulnerability (`worse_query`). Apple may close it in a future update; confirm compatibility before updating if you rely on this tool.
 - **Back up before applying.** The app backs up automatically, but a separate device backup is still good practice.
 
+## Frequently asked questions
+
+### eSIM still doesn't work after unlocking, or "Add eSIM" disappeared
+
+- **iPhone 18 Pro / Pro Max with two physical SIMs in the tray.** These models share one baseband channel between the dual physical slots and the eSIM. If both physical slots are occupied, the baseband can hide "Add eSIM". Fix: remove the SIM tray (empty), apply the unlock, cold restart, add the eSIMs, then reinsert the physical SIM(s).
+- **A respring is not enough for eSIM.** The baseband daemons (`CommCenter`, `ctkd`) do not reload the cache on a respring. After applying, power the device fully off and back on (cold restart).
+- **Both switches must be on.** The region change and the eSIM change must both be applied; changing only the region code leaves the eSIM hardware lock in place.
+- **Never change the model identifier (`ProductType`).** Forcing a China board (e.g. `iPhone19,7`) to a US model breaks baseband checks and hides the eSIM menu entirely.
+- **Adding a foreign eSIM inside mainland China is blocked by Apple.** Scan the code with airplane mode on and Wi-Fi connected through an overseas proxy.
+- **Hardware limits.** Only models with a physical eUICC chip (iPhone Air, iPhone 18 series, etc.) can add eSIMs. Older dual-nano-SIM-only models have no eUICC chip, so the switch only unlocks FaceTime audio and AI region access.
+
+### The preset page and MG Control don't agree
+
+MG Control shows the live CacheExtra values; the preset page shows the last read. Tap **Re-read** on the home page first. If they still disagree, the values were written directly (bypassing the preset) — apply the one-tap unlock once to normalize them.
+
+### AI shows 1/6 (or fewer than 6)
+
+Only that many of the 6 AI capability flags are currently on. Open the Apple Intelligence page to see which ones. A change made by an older version persists in the cache until reverted; if it was made before this app's first backup, the backup already contains it.
+
+### I want to restore the original state, but there is no backup
+
+Restore can only return values the app recorded. Check the Backups page for any earlier backup first. If there is none:
+- Keys that were **added** (did not exist before) → use **Remove Added Fields**, only for keys you are sure were added.
+- Keys that were **modified** → set them back in MG Control. `RegionCode` and the AI flags are CacheExtra keys and searchable there. `green-tea` / `not-green-tea` are CacheData slots (#383 / #506) and are **not** searchable — set them via the eSIM preset instead (`green-tea` → `true`, `not-green-tea` → `false`).
+- Restart the device after restoring.
+
+### The AI menu doesn't appear, or Siri says "something went wrong"
+
+Check that the region code is `LL`, the 6 AI flags are on, and the device has finished downloading the AI models (Wi-Fi + charging, idle for a while). Proxy rules matter: Siri domains (`guzzoni.apple.com`, `*.siri.apple.com`, `dejavu.apple.com`, `sequoia.apple.com`) must go **DIRECT** with a real IP, not through a proxy; AI / Private Cloud Compute domains go through a clean US node. Do not set the system region to United States if you want to keep China Mandarin call screening — set it to Taiwan instead.
+
+### Photos Clean Up works, but high-quality cleanup / extend / reimagine fails
+
+On native-AI iPhones the factory baseline needs `Personal Translator` slot #266 = `true` and `Audio Intelligence` slot #178 = `false`. Forcing the experimental Audio Intelligence slot can break ModelCatalog asset checks and make high-quality cleanup fail. Turn it off / restore the baseline and try again.
+
+### Reinstalling the app, or the certificate expires
+
+Our build keeps backups inside the app container — uninstalling the app deletes them. Export your backup before reinstalling or letting the certificate expire.
+
 ## Import a plist
 
 In Files or another app, select a MobileGestalt plist, tap **Share**, and choose **GestaltX**. The share extension reads the supplied file and hands it to the app through the shared App Group. Return to GestaltX if it does not open automatically. The app checks a device-bound proof from a GestaltX export, or at least two unique identifiers obtained from this device, then asks you to confirm the import. Files that cannot be verified are rejected. Previously imported files are never used as the reference for device identity.
