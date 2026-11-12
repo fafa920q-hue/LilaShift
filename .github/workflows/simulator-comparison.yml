@@ -33,7 +33,7 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Boot the comparison simulator
+      - name: Select the comparison simulator
         run: |
           set -euo pipefail
           xcodebuild -version
@@ -52,7 +52,6 @@ jobs:
           ')"
           test -n "$SIM"
           echo "COMPARISON_SIM=$SIM" >> "$GITHUB_ENV"
-          xcrun simctl boot "$SIM"
 
       - name: Build both versions and capture the same screens
         run: |
@@ -60,7 +59,7 @@ jobs:
           screens="$GITHUB_WORKSPACE/screenshots"
           mkdir -p "$screens"
           cd upstream
-          app="$RUNNER_TEMP/simulator-build/Release-iphonesimulator/GestaltX.app"
+          app="$RUNNER_TEMP/simulator-build/Debug-iphonesimulator/GestaltX.app"
           bundle="com.huami.gestultx"
           python3 - "$RUNNER_TEMP/Comparison.plist" <<'PY'
           import plistlib, sys
@@ -87,9 +86,10 @@ jobs:
 
           build() {
             python3 -X utf8 scripts/generate_localization.py
-            xcodebuild -quiet -project GestaltX.xcodeproj -target GestaltX -configuration Release \
-              -sdk iphonesimulator ARCHS=arm64 ONLY_ACTIVE_ARCH=YES SYMROOT="$RUNNER_TEMP/simulator-build" \
-              CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" build
+            xcodebuild -project GestaltX.xcodeproj -scheme GestaltX -configuration Debug -scmProvider system \
+              -destination "generic/platform=iOS Simulator" -sdk iphonesimulator ARCHS=arm64 \
+              -derivedDataPath "$RUNNER_TEMP/simulator-build" SYMROOT="$RUNNER_TEMP/simulator-build" \
+              COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" build
             codesign --force --sign - --deep "$app"
           }
 
@@ -118,7 +118,9 @@ jobs:
             xcrun simctl uninstall "$COMPARISON_SIM" "$bundle"
           }
 
+          echo "Building official v1.0.6 for the simulator"
           build
+          xcrun simctl boot "$COMPARISON_SIM"
           xcrun simctl bootstatus "$COMPARISON_SIM" -b
           xcrun simctl ui "$COMPARISON_SIM" appearance light
           xcrun simctl status_bar "$COMPARISON_SIM" override --time "9:41" --dataNetwork wifi \
@@ -128,6 +130,7 @@ jobs:
 
           git apply --check ../china-unlock.patch
           git apply ../china-unlock.patch
+          echo "Building the optimized version for the simulator"
           build
           capture_version optimized
           xcrun simctl list devices booted > "$screens/simulator.txt"
