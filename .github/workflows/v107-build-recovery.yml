@@ -1,0 +1,215 @@
+name: GestaltX 1.0.7 Lavender Recovery
+on:
+  push:
+    branches: [codex/v107-build-recovery]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gestaltx-v107-lavender-recovery
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.kind }}
+    runs-on: xcode-27
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [ipa, screenshots]
+    env:
+      BUILD_KIND: ${{ matrix.kind }}
+    steps:
+      - name: Check out the private build inputs
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check out GestaltX v1.0.7
+        uses: actions/checkout@v7
+        with:
+          repository: huamidev/GestaltX
+          ref: dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f
+          path: upstream
+          persist-credentials: false
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Apply the lavender patch and Swift compile fixes
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          git apply --check ../china-unlock-v107.patch
+          git apply ../china-unlock-v107.patch
+          python3 -X utf8 - <<'PY'
+          import os
+          from pathlib import Path
+
+          def replace(path, old, new):
+              file = Path(path)
+              source = file.read_text(encoding="utf-8")
+              if source.count(old) != 1:
+                  raise SystemExit(f"Expected one matching source block in {path}")
+              file.write_text(source.replace(old, new), encoding="utf-8")
+
+          replace("GestaltX/AboutView.swift",
+                  'Section(L("Open Source & Acknowledgements")) {', 'Section {')
+          replace("GestaltX/AboutView.swift",
+                  '            } footer: {\n                Text(L("The enhanced version is distributed under the GNU GPL v3.0.',
+                  '            } header: {\n                Text(L("Open Source & Acknowledgements"))\n            } footer: {\n                Text(L("The enhanced version is distributed under the GNU GPL v3.0.')
+          replace("GestaltX/ContentView.swift", "struct ToolGroupView: View {", "private struct ToolGroupView: View {")
+          replace("GestaltX/LiquidGlass.swift",
+                  "private func glassEffect() -> GlassEffect {", "private func glassEffect() -> Glass {")
+
+          if os.environ["BUILD_KIND"] == "screenshots":
+              anchor = '            if arguments.contains("--preview-review") {'
+              hook = '''            if arguments.contains("--preview-china-unlock") {
+                          let staged = model.stageChinaUnlock()
+                          precondition(staged && model.isChinaUnlockStaged && model.changeCount == 9
+                                       && model.chinaUnlockAIEnabledCount == 6 && model.previewRegionCode == "LL",
+                                       "The China Unlock preview must stage nine changes")
+                          let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                          let report = documents.appendingPathComponent("ChinaUnlockPreviewCount.txt")
+                          try? String(model.changeCount).write(to: report, atomically: true, encoding: .utf8)
+                          showsChanges = true
+                      }
+          '''
+              replace("GestaltX/ContentView.swift", anchor, hook + anchor)
+          PY
+          python3 -X utf8 scripts/generate_localization.py
+          python3 -X utf8 tests/LocalizationTests.py
+          git diff --check
+
+      - name: Build and verify the IPA
+        if: matrix.kind == 'ipa'
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          output="$RUNNER_TEMP/gestaltx-output"
+          mkdir -p "$output"
+          git add -N --all
+          git diff --binary HEAD > "$output/GestaltX_1.0.7_ChinaUnlock.patch"
+          xcodebuild -version
+          .github/scripts/build-ipa.sh "$output"
+          mv "$output/GestaltX_1.0.7.ipa" "$output/GestaltX_1.0.7_ChinaUnlock.ipa"
+          unzip -tq "$output/GestaltX_1.0.7_ChinaUnlock.ipa"
+
+      - name: Upload the IPA and matching source patch
+        if: matrix.kind == 'ipa'
+        uses: actions/upload-artifact@v7
+        with:
+          name: GestaltX_1.0.7_ChinaUnlock_Lavender
+          path: ${{ runner.temp }}/gestaltx-output/*
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build the simulator app
+        if: matrix.kind == 'screenshots'
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcodebuild -project GestaltX.xcodeproj -scheme GestaltX -configuration Debug -scmProvider system \
+            -destination 'generic/platform=iOS Simulator' -sdk iphonesimulator ARCHS=arm64 \
+            -derivedDataPath "$RUNNER_TEMP/derived" COMPILER_INDEX_STORE_ENABLE=NO \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" build
+          app="$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/GestaltX.app"
+          test -d "$app"
+          codesign --force --sign - --deep "$app"
+
+      - name: Capture the loaded document and nine-change review
+        if: matrix.kind == 'screenshots'
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/GestaltX.app"
+          bundle="com.huami.gestultx"
+          sim="$(xcrun simctl list devices available --json | python3 -c '
+          import json, re, sys
+          devices = json.load(sys.stdin)["devices"]
+          def version(runtime):
+              match = re.search(r"\.iOS-(\d+(?:-\d+)*)", runtime)
+              return tuple(map(int, match.group(1).split("-"))) if match else ()
+          for name in ("iPhone 18 Pro Max", "iPhone 17 Pro", "iPhone 17", "iPhone 18 Pro", "iPhone Air"):
+              for runtime in sorted(devices, key=version, reverse=True):
+                  if not version(runtime):
+                      continue
+                  for device in devices[runtime]:
+                      if device.get("isAvailable") and device["name"] == name:
+                          print(device["udid"])
+                          print(name + " / " + runtime, file=sys.stderr)
+                          sys.exit(0)
+          sys.exit("No supported iPhone simulator")
+          ')"
+          output="$RUNNER_TEMP/shots"
+          mkdir -p "$output"
+          xcrun simctl boot "$sim"
+          xcrun simctl bootstatus "$sim" -b
+          xcrun simctl list devices booted > "$output/simulator.txt"
+          xcrun simctl ui "$sim" appearance light || true
+          xcrun simctl status_bar "$sim" override --time "9:41" || true
+          xcrun simctl install "$sim" "$app"
+          data="$(xcrun simctl get_app_container "$sim" "$bundle" data)"
+          mkdir -p "$data/Documents"
+          fixture="$data/Documents/ChinaUnlockFixture.plist"
+          python3 - "$fixture" <<'PY'
+          import plistlib, sys
+
+          cache = bytearray(720 * 9)
+          cache[383 * 8] = 1
+          cache[720 * 8 + 383] = cache[720 * 8 + 506] = 1
+          document = {
+              "CacheUUID": "7F1DF278-18B7-4E5A-8425-09E8830DE9AF",
+              "CacheVersion": "24C5037i",
+              "CacheData": bytes(cache),
+              "CacheExtra": {
+                  "h9jDsbgj7xIVeIQ8S3/X3Q": "iPhone18,1",
+                  "Z/dqyWS6OZTRy10UcmUAhw": "iPhone 17 Pro",
+                  "h63QSdBCiT/z0WU6rdQv6Q": "CH",
+                  "zHeENZu+wbg7PUprwNwBWg": "CH/A",
+                  "yK+xavymRGZ3xWc1tb8XDg": "CH/A",
+                  "97JDvERpVwO+GHtthIh7hA": "A3518",
+                  "K/R1GfGfCkXvEhaPS2Vrng": 2,
+              },
+          }
+          with open(sys.argv[1], "wb") as handle:
+              plistlib.dump(document, handle, fmt=plistlib.FMT_BINARY)
+          PY
+
+          launch() {
+            xcrun simctl terminate "$sim" "$bundle" 2>/dev/null || true
+            xcrun simctl launch "$sim" "$bundle" -AppleLanguages '(zh-Hans)' -AppleLocale zh_CN \
+              --preview-document "$fixture" --preview-tab 0 "$@"
+          }
+
+          launch
+          sleep 6
+          xcrun simctl io "$sim" screenshot "$output/1-tools-home.png"
+
+          launch --preview-category Display
+          sleep 6
+          xcrun simctl io "$sim" screenshot "$output/2-screen-lock.png"
+
+          launch --preview-china-unlock
+          report="$data/Documents/ChinaUnlockPreviewCount.txt"
+          for attempt in {1..20}; do
+            [[ -s "$report" ]] && break
+            sleep 2
+          done
+          [[ -s "$report" ]] && [[ "$(cat "$report")" == 9 ]]
+          cp "$report" "$output/preview-change-count.txt"
+          sleep 3
+          xcrun simctl io "$sim" screenshot "$output/3-confirm-changes.png"
+
+      - name: Upload the three simulator screenshots
+        if: matrix.kind == 'screenshots'
+        uses: actions/upload-artifact@v7
+        with:
+          name: GestaltX_1.0.7_ChinaUnlock_Lavender_Screenshots
+          path: ${{ runner.temp }}/shots/*
+          if-no-files-found: error
+          retention-days: 14
