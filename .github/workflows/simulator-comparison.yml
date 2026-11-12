@@ -38,11 +38,11 @@ jobs:
           set -euo pipefail
           xcodebuild -version
           SIM="$(xcrun simctl list devices available --json | python3 -c '
-          import json, sys
+          import json, re, sys
           devices = json.load(sys.stdin)["devices"]
-          runtimes = [key for key in devices if ".iOS-" in key]
+          runtimes = [key for key in devices if re.search(r"\.iOS-\d", key)]
           for name in ("iPhone 18 Pro Max", "iPhone 17", "iPhone 18 Pro", "iPhone Air"):
-              for runtime in sorted(runtimes, key=lambda value: tuple(map(int, value.split(".iOS-")[-1].split("-"))), reverse=True):
+              for runtime in sorted(runtimes, key=lambda value: tuple(map(int, re.search(r"\.iOS-(\d+(?:-\d+)*)", value).group(1).split("-"))), reverse=True):
                   for device in devices[runtime]:
                       if device.get("isAvailable") and device["name"] == name:
                           print(device["udid"])
