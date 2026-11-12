@@ -21,8 +21,13 @@
 #   staging the unlock needs a valid device plist with a verifiable eSIM
 #   cache layout, which the simulator cannot provide. No new launch hook
 #   was added for it; the gap is documented, not faked.
-# - If the runner has no iPhone 17 Pro simulator runtime, the capture
-#   step fails with the device list printed; adjust the device name.
+# - The patch adds a shared scheme
+#   (GestaltX.xcodeproj/xcshareddata/xcschemes/GestaltX.xcscheme) so the
+#   build uses -scheme, which is required together with -derivedDataPath
+#   (Xcode 27.2 rejects -target with -derivedDataPath, exit 64).
+# - A step prints the available simulators so the log shows whether an
+#   iPhone 17 Pro simulator exists on the runner; the capture step still
+#   fails loudly with the device list if it is missing.
 name: Screenshot GestaltX China Unlock
 on:
   workflow_dispatch:
@@ -75,13 +80,17 @@ jobs:
             sed -i '' 's/objectVersion = 110;/objectVersion = 77;/' GestaltX.xcodeproj/project.pbxproj
           fi
           xcodebuild -project GestaltX.xcodeproj \
-            -target GestaltX \
+            -scheme GestaltX \
             -configuration Debug \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -derivedDataPath "$RUNNER_TEMP/derived" \
             CODE_SIGNING_ALLOWED=NO \
             build
           test -d "$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/GestaltX.app"
+
+      - name: List available simulators
+        run: |
+          xcrun simctl list devices available
 
       - name: Capture the three pages
         run: |
