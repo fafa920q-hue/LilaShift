@@ -1,0 +1,475 @@
+diff --git a/GestaltX/Capabilities.swift b/GestaltX/Capabilities.swift
+index 08bbfc6..d5b9cac 100644
+--- a/GestaltX/Capabilities.swift
++++ b/GestaltX/Capabilities.swift
+@@ -117,6 +117,23 @@ struct Capability: Identifiable {
+     ]
+ }
+ 
++/// One-tap "China Unlock" (full unlock) for China-mainland devices with
++/// eSIM hardware: the eSIM cache flags, region code US (`LL`, sales region
++/// untouched) and the six Apple Intelligence presets below.
++/// `siriOnDevice` is deliberately excluded: `Capability.availableChoices`
++/// for it is only `[.keep, .disable, .removeAdded]`, and 1.0.6 (#102)
++/// preserves its device-specific value, so forcing a generic value could
++/// revert the Apple Intelligence Siri interface. WAPI and the model number
++/// are excluded as well; WAPI can still be disabled on its own.
++enum ChinaUnlock {
++    static let regionCodeID = "US"
++    static let aiCapabilityIDs = ["ai", "audioIntelligence", "personalTranslator",
++                                  "photosCleanUp", "handwritingSynthesis", "alwaysListeningSiri"]
++    static var aiCapabilities: [Capability] {
++        aiCapabilityIDs.compactMap { id in Capability.all.first { $0.id == id } }
++    }
++}
++
+ enum PresetChoice: Int, CaseIterable, Identifiable {
+     case keep, enable, disable, removeAdded
+     var id: Int { rawValue }
+diff --git a/GestaltX/ContentView.swift b/GestaltX/ContentView.swift
+index 6d372d6..abecf7a 100644
+--- a/GestaltX/ContentView.swift
++++ b/GestaltX/ContentView.swift
+@@ -347,6 +347,52 @@ struct ContentView: View {
+                     Label(L(model.isBusy ? "Reading…" : model.hasDocument ? "Read Again" : "Read MobileGestalt"), systemImage: "arrow.clockwise")
+                 }.disabled(model.isBusy || model.changeCount > 0)
+             }
++            Section(L("China Unlock")) {
++                HStack {
++                    Text(verbatim: "eSIM")
++                    Spacer()
++                    Text(L(model.isESIMUnlockedInPreview ? "Unlocked" : "Locked"))
++                        .foregroundStyle(model.isESIMUnlockedInPreview ? .green : .secondary)
++                }
++                HStack {
++                    Text(L("Region Code"))
++                    Spacer()
++                    Text(model.previewRegionCode == "LL" ? L("United States") : (model.previewRegionCode ?? "—"))
++                        .foregroundStyle(.secondary)
++                }
++                VStack(alignment: .leading, spacing: 4) {
++                    HStack {
++                        Text(L("Apple Intelligence Capability"))
++                        Spacer()
++                        Text("\(model.chinaUnlockAIEnabledCount)/6")
++                            .foregroundStyle(.secondary)
++                    }
++                    ForEach(ChinaUnlock.aiCapabilityIDs, id: \.self) { id in
++                        if let capability = Capability.all.first(where: { $0.id == id }) {
++                            HStack(spacing: 6) {
++                                Image(systemName: model.isAICapabilityEnabledInPreview(id) ? "checkmark.circle.fill" : "circle")
++                                    .foregroundStyle(model.isAICapabilityEnabledInPreview(id) ? .green : .secondary)
++                                Text(L(capability.title))
++                            }
++                            .font(.caption)
++                            .foregroundStyle(.secondary)
++                        }
++                    }
++                }
++                Button {
++                    if model.isChinaUnlockedInPreview { model.restoreChinaUnlock() } else { model.stageChinaUnlock() }
++                } label: {
++                    Label(L(model.isChinaUnlockedInPreview ? "One-Tap Restore" : "One-Tap Unlock"),
++                          systemImage: model.isChinaUnlockedInPreview ? "arrow.uturn.backward" : "key.fill")
++                }
++                .disabled(!model.hasDocument || model.isBusy)
++                Text(L("Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged."))
++                    .font(.footnote).foregroundStyle(.secondary)
++                Text(L("Restart the device after unlocking."))
++                    .font(.footnote).foregroundStyle(.secondary)
++                Text(L("Only devices with eSIM hardware can add an eSIM."))
++                    .font(.footnote).foregroundStyle(.secondary)
++            }
+             Section("MobileGestalt") {
+                 ForEach(CapabilityCategory.allCases) { category in
+                     NavigationLink { CategoryView(category: category) } label: {
+diff --git a/GestaltX/GestaltManager.swift b/GestaltX/GestaltManager.swift
+index 89ea586..df2e48d 100644
+--- a/GestaltX/GestaltManager.swift
++++ b/GestaltX/GestaltManager.swift
+@@ -143,6 +143,81 @@ final class GestaltManager: ObservableObject {
+         if let snapshot { accept(snapshot) }
+     }
+ 
++    /// Test-only entry point: loads a fixture snapshot so staging and
++    /// preview logic can be verified without a device or signing.
++    /// Production code never calls this; it only resets staged state
++    /// through the same `accept` path as a real read.
++    func loadSnapshotForTests(_ snapshot: DocumentSnapshot) { accept(snapshot) }
++
++    // MARK: - China Unlock
++
++    /// True while the full China Unlock is staged (not yet applied):
++    /// eSIM flags enabled, region code US and all six AI presets enabled.
++    var isChinaUnlockStaged: Bool {
++        guard hasDocument else { return false }
++        return cacheOptionChoice == .enable
++            && regionCodeID == ChinaUnlock.regionCodeID
++            && ChinaUnlock.aiCapabilityIDs.allSatisfy { (choices[$0] ?? .keep) == .enable }
++    }
++
++    /// Region code shown by the staged preview (`LL` once unlocked).
++    var previewRegionCode: String? { preview?.extra[GestaltKeys.regionCode] as? String }
++
++    /// eSIM state shown by the staged preview.
++    var isESIMUnlockedInPreview: Bool {
++        guard let preview, let flags = try? DeviceCacheOptions.flags(in: preview) else { return false }
++        return flags == .enabled
++    }
++
++    /// Whether one AI preset of the China Unlock bundle is on in the preview.
++    func isAICapabilityEnabledInPreview(_ id: String) -> Bool {
++        guard let preview, let capability = Capability.all.first(where: { $0.id == id }) else { return false }
++        return capability.keys.allSatisfy { (preview.extra[$0] as? NSNumber)?.intValue == 1 }
++    }
++
++    /// How many of the six AI presets are on in the preview.
++    var chinaUnlockAIEnabledCount: Int {
++        ChinaUnlock.aiCapabilityIDs.filter { isAICapabilityEnabledInPreview($0) }.count
++    }
++
++    /// True when the preview already shows the full unlock, whether it was
++    /// just staged or applied in an earlier session.
++    var isChinaUnlockedInPreview: Bool {
++        isESIMUnlockedInPreview && previewRegionCode == "LL"
++            && chinaUnlockAIEnabledCount == ChinaUnlock.aiCapabilityIDs.count
++    }
++
++    /// Stages the full China Unlock: eSIM cache flags, region code US and
++    /// the six Apple Intelligence presets. Nothing is written here; the
++    /// user still reviews the changes and applies them, and a restart is
++    /// required before they take effect. Sales region, `siriOnDevice`,
++    /// the model number and WAPI are left untouched.
++    func stageChinaUnlock() {
++        guard hasDocument, !isBusy else { return }
++        stageCacheOption(.enable)
++        regionCodeID = ChinaUnlock.regionCodeID
++        for id in ChinaUnlock.aiCapabilityIDs { choices[id] = .enable }
++    }
++
++    /// Stages a restore of the full China Unlock: eSIM flags back to the
++    /// recorded originals, region code back to its recorded original and
++    /// the six AI presets back to their recorded originals (`.disable`
++    /// removes keys that were originally absent). `siriOnDevice`, the
++    /// model number, WAPI and the sales region are left untouched.
++    func restoreChinaUnlock() {
++        guard hasDocument, !isBusy else { return }
++        stageCacheOption(.restoreOriginal)
++        regionCodeID = "keep"
++        if let snapshot, var document = working {
++            // The region overlay is preview-only, so stopping the overlay
++            // alone would leave a previously applied `LL` in `working`.
++            // Reset the working document itself to the recorded original.
++            document.set(snapshot.originalValue(for: GestaltKeys.regionCode), for: GestaltKeys.regionCode)
++            working = document
++        }
++        for id in ChinaUnlock.aiCapabilityIDs { choices[id] = .disable }
++    }
++
+     func stageCacheOption(_ choice: CacheOptionChoice) {
+         guard !isBusy, var document = working, let snapshot else { return }
+         do {
+diff --git a/localization/es.json b/localization/es.json
+index f94e44a..d800805 100644
+--- a/localization/es.json
++++ b/localization/es.json
+@@ -430,5 +430,13 @@
+   "This image could not be used. Choose another image.": "No se puede usar esta imagen. Elige otra.",
+   "Save Current Launch Image": "Guardar imagen de inicio actual",
+   "Allow GestaltX to add photos in Settings, then try again.": "Permite a GestaltX añadir fotos en Ajustes e inténtalo de nuevo.",
+-  "The launch image was saved to Photos.": "La imagen de inicio se ha guardado en Fotos."
++  "The launch image was saved to Photos.": "La imagen de inicio se ha guardado en Fotos.",
++  "China Unlock": "Desbloqueo para China",
++  "Unlocked": "Desbloqueado",
++  "Locked": "Bloqueado",
++  "One-Tap Restore": "Restaurar con un toque",
++  "One-Tap Unlock": "Desbloquear con un toque",
++  "Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged.": "Prepara juntos los cambios de eSIM, código de región y Apple Intelligence. Siri en el dispositivo conserva su configuración.",
++  "Restart the device after unlocking.": "Reinicia el dispositivo después de aplicar el desbloqueo.",
++  "Only devices with eSIM hardware can add an eSIM.": "Solo los dispositivos con hardware eSIM pueden añadir una eSIM."
+ }
+diff --git a/localization/fa.json b/localization/fa.json
+index bcb0d10..07026dd 100644
+--- a/localization/fa.json
++++ b/localization/fa.json
+@@ -430,5 +430,13 @@
+   "This image could not be used. Choose another image.": "این تصویر قابل استفاده نیست. تصویر دیگری انتخاب کنید.",
+   "Save Current Launch Image": "ذخیره تصویر آغاز فعلی",
+   "Allow GestaltX to add photos in Settings, then try again.": "در تنظیمات اجازه افزودن عکس را به GestaltX بدهید و دوباره امتحان کنید.",
+-  "The launch image was saved to Photos.": "تصویر آغاز در عکس‌ها ذخیره شد."
++  "The launch image was saved to Photos.": "تصویر آغاز در عکس‌ها ذخیره شد.",
++  "China Unlock": "بازگشایی نسخه چین",
++  "Unlocked": "بازگشایی‌شده",
++  "Locked": "قفل",
++  "One-Tap Restore": "بازگردانی با یک لمس",
++  "One-Tap Unlock": "بازگشایی با یک لمس",
++  "Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged.": "تغییرات eSIM، کد منطقه و Apple Intelligence را با هم آماده می‌کند. تنظیم فعلی Siri روی دستگاه حفظ می‌شود.",
++  "Restart the device after unlocking.": "پس از اعمال بازگشایی، دستگاه را دوباره راه‌اندازی کنید.",
++  "Only devices with eSIM hardware can add an eSIM.": "فقط دستگاه‌های دارای سخت‌افزار eSIM می‌توانند eSIM اضافه کنند."
+ }
+diff --git a/localization/ja.json b/localization/ja.json
+index 1d8649a..ac92f78 100644
+--- a/localization/ja.json
++++ b/localization/ja.json
+@@ -430,5 +430,13 @@
+   "Your lock screen text": "ロック画面のテキストを入力",
+   "Save Current Launch Image": "現在の起動画面を保存",
+   "Allow GestaltX to add photos in Settings, then try again.": "「設定」でGestaltXによる写真の追加を許可してから、もう一度お試しください。",
+-  "The launch image was saved to Photos.": "起動画面を「写真」に保存しました。"
++  "The launch image was saved to Photos.": "起動画面を「写真」に保存しました。",
++  "China Unlock": "中国本土版のロック解除",
++  "Unlocked": "解除済み",
++  "Locked": "ロック中",
++  "One-Tap Restore": "ワンタップで復元",
++  "One-Tap Unlock": "ワンタップで解除",
++  "Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged.": "eSIM、地域コード、Apple Intelligence の変更をまとめて保留します。オンデバイス Siri の設定は維持されます。",
++  "Restart the device after unlocking.": "ロック解除の変更を適用したら、デバイスを再起動してください。",
++  "Only devices with eSIM hardware can add an eSIM.": "eSIM を追加できるのは、対応ハードウェアを搭載したデバイスのみです。"
+ }
+diff --git a/localization/ko.json b/localization/ko.json
+index da89278..2e5d409 100644
+--- a/localization/ko.json
++++ b/localization/ko.json
+@@ -430,5 +430,13 @@
+   "This image could not be used. Choose another image.": "이 이미지를 사용할 수 없습니다. 다른 이미지를 선택하세요.",
+   "Save Current Launch Image": "현재 시작 이미지 저장",
+   "Allow GestaltX to add photos in Settings, then try again.": "설정에서 GestaltX의 사진 추가를 허용한 후 다시 시도하세요.",
+-  "The launch image was saved to Photos.": "시작 이미지를 사진에 저장했습니다."
++  "The launch image was saved to Photos.": "시작 이미지를 사진에 저장했습니다.",
++  "China Unlock": "중국 본토판 잠금 해제",
++  "Unlocked": "잠금 해제됨",
++  "Locked": "잠김",
++  "One-Tap Restore": "한 번에 복원",
++  "One-Tap Unlock": "한 번에 잠금 해제",
++  "Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged.": "eSIM, 지역 코드, Apple Intelligence 변경 사항을 함께 준비합니다. 온디바이스 Siri의 현재 설정은 유지됩니다.",
++  "Restart the device after unlocking.": "잠금 해제를 적용한 후 기기를 재시동하세요.",
++  "Only devices with eSIM hardware can add an eSIM.": "eSIM 하드웨어가 있는 기기에서만 eSIM을 추가할 수 있습니다."
+ }
+diff --git a/localization/ru.json b/localization/ru.json
+index 052a794..6c55e10 100644
+--- a/localization/ru.json
++++ b/localization/ru.json
+@@ -430,5 +430,13 @@
+   "This image could not be used. Choose another image.": "Не удалось использовать это изображение. Выберите другое.",
+   "Save Current Launch Image": "Сохранить текущее изображение запуска",
+   "Allow GestaltX to add photos in Settings, then try again.": "Разрешите GestaltX добавлять фото в Настройках и повторите попытку.",
+-  "The launch image was saved to Photos.": "Изображение запуска сохранено в Фото."
++  "The launch image was saved to Photos.": "Изображение запуска сохранено в Фото.",
++  "China Unlock": "Разблокировка для Китая",
++  "Unlocked": "Разблокировано",
++  "Locked": "Заблокировано",
++  "One-Tap Restore": "Восстановить одним касанием",
++  "One-Tap Unlock": "Разблокировать одним касанием",
++  "Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged.": "Подготавливает изменения eSIM, кода региона и Apple Intelligence. Текущая настройка Siri на устройстве сохраняется.",
++  "Restart the device after unlocking.": "После применения разблокировки перезагрузите устройство.",
++  "Only devices with eSIM hardware can add an eSIM.": "Добавить eSIM можно только на устройствах с поддержкой eSIM на уровне оборудования."
+ }
+diff --git a/localization/vi.json b/localization/vi.json
+index 65452ad..3c19bdf 100644
+--- a/localization/vi.json
++++ b/localization/vi.json
+@@ -430,5 +430,13 @@
+   "This image could not be used. Choose another image.": "Không thể dùng ảnh này. Hãy chọn ảnh khác.",
+   "Save Current Launch Image": "Lưu ảnh khởi động hiện tại",
+   "Allow GestaltX to add photos in Settings, then try again.": "Cho phép GestaltX thêm ảnh trong Cài đặt rồi thử lại.",
+-  "The launch image was saved to Photos.": "Đã lưu ảnh khởi động vào Ảnh."
++  "The launch image was saved to Photos.": "Đã lưu ảnh khởi động vào Ảnh.",
++  "China Unlock": "Mở khóa bản Trung Quốc",
++  "Unlocked": "Đã mở khóa",
++  "Locked": "Đang khóa",
++  "One-Tap Restore": "Khôi phục một chạm",
++  "One-Tap Unlock": "Mở khóa một chạm",
++  "Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged.": "Chuẩn bị đồng thời các thay đổi về eSIM, mã vùng và Apple Intelligence. Siri trên thiết bị giữ nguyên cài đặt hiện tại.",
++  "Restart the device after unlocking.": "Khởi động lại thiết bị sau khi áp dụng thay đổi mở khóa.",
++  "Only devices with eSIM hardware can add an eSIM.": "Chỉ thiết bị có phần cứng eSIM mới có thể thêm eSIM."
+ }
+diff --git a/localization/zh-Hant-HK.json b/localization/zh-Hant-HK.json
+index fccffd9..33e2b16 100644
+--- a/localization/zh-Hant-HK.json
++++ b/localization/zh-Hant-HK.json
+@@ -430,5 +430,13 @@
+   "This image could not be used. Choose another image.": "無法使用這張圖片，請選擇其他圖片。",
+   "Save Current Launch Image": "儲存目前的啟動畫面",
+   "Allow GestaltX to add photos in Settings, then try again.": "請在「設定」中允許 GestaltX 加入相片後再試一次。",
+-  "The launch image was saved to Photos.": "啟動畫面已儲存至「相片」。"
++  "The launch image was saved to Photos.": "啟動畫面已儲存至「相片」。",
++  "China Unlock": "中國內地版一鍵解鎖",
++  "Unlocked": "已解鎖",
++  "Locked": "未解鎖",
++  "One-Tap Restore": "一鍵還原",
++  "One-Tap Unlock": "一鍵解鎖",
++  "Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged.": "一併暫存 eSIM、地區代碼和 Apple Intelligence 的更改，保留裝置端 Siri 的目前設定。",
++  "Restart the device after unlocking.": "套用解鎖更改後，請重新啟動裝置。",
++  "Only devices with eSIM hardware can add an eSIM.": "只有配備 eSIM 硬件的裝置才能加入 eSIM。"
+ }
+diff --git a/localization/zh-Hant-TW.json b/localization/zh-Hant-TW.json
+index 9ad03ec..b4dd30d 100644
+--- a/localization/zh-Hant-TW.json
++++ b/localization/zh-Hant-TW.json
+@@ -430,5 +430,13 @@
+   "This image could not be used. Choose another image.": "無法使用這張圖片，請選擇其他圖片。",
+   "Save Current Launch Image": "儲存目前的啟動畫面",
+   "Allow GestaltX to add photos in Settings, then try again.": "請在「設定」中允許 GestaltX 加入照片後再試一次。",
+-  "The launch image was saved to Photos.": "啟動畫面已儲存至「照片」。"
++  "The launch image was saved to Photos.": "啟動畫面已儲存至「照片」。",
++  "China Unlock": "中國大陸版一鍵解鎖",
++  "Unlocked": "已解鎖",
++  "Locked": "未解鎖",
++  "One-Tap Restore": "一鍵還原",
++  "One-Tap Unlock": "一鍵解鎖",
++  "Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged.": "一併暫存 eSIM、地區代碼和 Apple Intelligence 的變更，保留裝置端 Siri 的目前設定。",
++  "Restart the device after unlocking.": "套用解鎖變更後，請重新啟動裝置。",
++  "Only devices with eSIM hardware can add an eSIM.": "只有配備 eSIM 硬體的裝置才能加入 eSIM。"
+ }
+diff --git a/scripts/generate_localization.py b/scripts/generate_localization.py
+index 527d9fc..d4e494e 100644
+--- a/scripts/generate_localization.py
++++ b/scripts/generate_localization.py
+@@ -440,6 +440,14 @@ System settings could not be verified after writing.	写入后无法验证系统
+ Some settings could not be restored automatically. Read them again and use Revert.	部分设置未能自动恢复，请重新读取并使用“还原”。
+ These system settings are not accessible on this device.	当前设备无法访问这些系统设置。
+ Lock screen text updated.	锁屏文字已更新。
++China Unlock	国行一键解锁
++Unlocked	已解锁
++Locked	未解锁
++One-Tap Restore	一键还原
++One-Tap Unlock	一键解锁
++Stages eSIM, region code and Apple Intelligence together. On-Device Siri is left unchanged.	同时暂存 eSIM、地区代码和 Apple 智能的更改，保留端侧 Siri 的当前设置。
++Restart the device after unlocking.	应用解锁更改后，请重新启动设备。
++Only devices with eSIM hardware can add an eSIM.	只有具备 eSIM 硬件的设备才能添加 eSIM。
+ '''
+ entries = {}
+ for line in TRANSLATIONS.strip().splitlines():
+diff --git a/tests/ChinaUnlockTests.swift b/tests/ChinaUnlockTests.swift
+new file mode 100644
+index 0000000..365351c
+--- /dev/null
++++ b/tests/ChinaUnlockTests.swift
+@@ -0,0 +1,127 @@
++import Foundation
++
++@main struct ChinaUnlockTests {
++    struct Failure: Error { let message: String }
++    static func expect(_ condition: Bool, _ message: String) throws {
++        if !condition { throw Failure(message: message) }
++    }
++
++    /// The six Apple Intelligence keys staged by China Unlock, in the same
++    /// order as `ChinaUnlock.aiCapabilityIDs`:
++    /// ai, audioIntelligence, personalTranslator, photosCleanUp,
++    /// handwritingSynthesis, alwaysListeningSiri.
++    static let aiKeys = [
++        "A62OafQ85EJAiiqKn4agtg",
++        "rb2tKZxlj0Gm2tBmUQSLqQ",
++        "M1n2sAqf33NAOgZRGxQYBA",
++        "XNCjqOupLM/S8fNyxRNQTA",
++        "YgYIIViDt1kgzyIsIV61vA",
++        "TusANsf9Lfe3P/9fIXXSrQ",
++    ]
++    static let siriKey = "K/R1GfGfCkXvEhaPS2Vrng"
++
++    /// China-mainland fixture: eSIM restricted (green-tea on), region CH
++    /// with CH/A sales suffixes, no AI keys, a device-specific Siri
++    /// value (2) and an Air model number.
++    static func fixture() throws -> GestaltDocument {
++        let layout = MobileGestaltCacheLayout.originalProfile
++        var cache = Data(count: layout.byteCount)
++        cache[layout.greenTeaOffset] = 1
++        cache[layout.notGreenTeaOffset] = 0
++        cache[layout.validityOffset(for: layout.greenTeaIndex)] = 1
++        cache[layout.validityOffset(for: layout.notGreenTeaIndex)] = 1
++        let extra: [String: Any] = [
++            GestaltKeys.productType: "iPhone18,1",
++            GestaltKeys.regionCode: "CH",
++            GestaltKeys.regionInfo: "CH/A",
++            GestaltKeys.legacyRegionInfo: "CH/A",
++            GestaltKeys.modelNumber: "A3518",
++            siriKey: NSNumber(value: 2),
++        ]
++        return try GestaltDocument(data: PropertyListSerialization.data(fromPropertyList: [
++            "CacheVersion": "24C5037i", "CacheUUID": layout.uuid,
++            "CacheData": cache, "CacheExtra": extra,
++        ], format: .binary, options: 0))
++    }
++
++    @MainActor
++    static func main() throws {
++        // No document: staging and restoring must be a no-op, never a crash.
++        let empty = GestaltManager()
++        empty.stageChinaUnlock()
++        empty.restoreChinaUnlock()
++        try expect(!empty.isChinaUnlockStaged && !empty.isChinaUnlockedInPreview && empty.preview == nil,
++                   "No document: China Unlock stages and restores nothing")
++
++        let layout = MobileGestaltCacheLayout.originalProfile
++        let original = try fixture()
++        let data = try original.encoded()
++        let snapshot = DocumentSnapshot(data: data, document: original, source: .local, name: "fixture")
++        let manager = GestaltManager()
++        manager.loadSnapshotForTests(snapshot)
++        try expect(!manager.isChinaUnlockStaged && !manager.isChinaUnlockedInPreview,
++                   "Fixture starts locked: eSIM restricted, region CH, AI absent")
++
++        // One tap stages the full unlock.
++        manager.stageChinaUnlock()
++        try expect(manager.isChinaUnlockStaged, "Staged flag is set after one tap")
++        try expect(manager.isChinaUnlockedInPreview, "Preview shows the full unlock")
++        guard let preview = manager.preview else { throw Failure(message: "Preview exists after staging") }
++        try expect(DeviceCacheOptions.flags(in: preview) == .enabled,
++                   "Preview enables eSIM: green-tea false, not-green-tea true")
++        let before = original.root["CacheData"] as! Data
++        let after = preview.root["CacheData"] as! Data
++        try expect(before.indices.filter { before[$0] != after[$0] } == [layout.greenTeaOffset, layout.notGreenTeaOffset].sorted(),
++                   "Only the two eSIM bytes change in CacheData")
++        try expect(preview.extra[GestaltKeys.regionCode] as? String == "LL",
++                   "Preview sets RegionCode to LL")
++        try expect(preview.extra[GestaltKeys.regionInfo] as? String == "CH/A"
++                   && preview.extra[GestaltKeys.legacyRegionInfo] as? String == "CH/A",
++                   "Sales-region suffixes stay CH/A")
++        for key in aiKeys {
++            try expect((preview.extra[key] as? NSNumber)?.intValue == 1,
++                       "Preview enables AI key \(key)")
++        }
++        try expect(manager.chinaUnlockAIEnabledCount == 6, "All six AI presets read as enabled")
++        try expect((preview.extra[siriKey] as? NSNumber)?.intValue == 2,
++                   "siriOnDevice keeps its device-specific value")
++        try expect((manager.choices["siriOnDevice"] ?? .keep) == .keep,
++                   "siriOnDevice is never staged by China Unlock")
++        try expect(preview.extra[GestaltKeys.modelNumber] as? String == "A3518"
++                   && manager.modelID == "keep",
++                   "Model number is untouched")
++        try expect(manager.regionID == "keep", "Sales Region stays keep")
++        // 7 CacheExtra keys (region code + 6 AI keys) + 2 cache bytes.
++        try expect(manager.changeCount == 9,
++                   "Staged change count is 9, got \(manager.changeCount)")
++
++        // Staging twice is idempotent.
++        manager.stageChinaUnlock()
++        try expect(manager.changeCount == 9, "Staging the unlock twice does not duplicate changes")
++
++        // One-tap restore returns all three groups to their originals.
++        manager.restoreChinaUnlock()
++        try expect(!manager.isChinaUnlockStaged && !manager.isChinaUnlockedInPreview,
++                   "Restore clears the staged and unlocked state")
++        try expect(manager.changeCount == 0, "Restore unstages every change")
++        guard let restored = manager.preview else { throw Failure(message: "Preview exists after restore") }
++        try expect(restored.matches(original), "Restored preview matches the original document")
++        try expect(DeviceCacheOptions.flags(in: restored) == .restricted,
++                   "Restore returns the eSIM flags to restricted")
++        try expect(restored.extra[GestaltKeys.regionCode] as? String == "CH",
++                   "Restore returns RegionCode to CH")
++        for key in aiKeys {
++            try expect(restored.extra[key] == nil, "Restore removes AI key \(key)")
++        }
++        try expect((restored.extra[siriKey] as? NSNumber)?.intValue == 2,
++                   "Restore preserves the device-specific Siri value")
++        try expect(restored.extra[GestaltKeys.modelNumber] as? String == "A3518",
++                   "Restore preserves the model number")
++
++        // The unlock can be staged again after a restore.
++        manager.stageChinaUnlock()
++        try expect(manager.isChinaUnlockStaged && manager.changeCount == 9,
++                   "Unlock stages again after a restore")
++        print("PASS: China Unlock stages eSIM, region LL and six AI keys, keeps sales region, Siri value and model number untouched, and restores all three groups to their originals.")
++    }
++}
