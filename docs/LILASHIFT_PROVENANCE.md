@@ -4,7 +4,7 @@
 
 | 来源 | 地址 / 许可 | 当前用途与证据 | 原作者/保留声明 |
 |---|---|---|---|
-| **GestaltX (primary)** | [huamidev/GestaltX](https://github.com/huamidev/GestaltX/tree/v1.0.7) · GPL-3.0 | 主 SwiftUI App、MobileGestalt 文件模型、备份/恢复与分享扩展，固定 SHA `dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f` | **huamidev** 与已有贡献者；保留源文件 SPDX/版权标头及 GPL |
+| **GestaltX (primary)** | [huamidev/GestaltX](https://github.com/huamidev/GestaltX/tree/c60519c619ced032a0b174c13062b3b9bc9ee86f) · GPL-3.0 | 主 SwiftUI App、MobileGestalt 文件模型、备份/恢复与分享扩展；开发版固定 SHA `c60519c619ced032a0b174c13062b3b9bc9ee86f`；旧发布版固定 SHA `dfd4a7e3a8b8a89e76ac025a2a37242a7ed4c41f` | **huamidev** 与已有贡献者；保留源文件 SPDX/版权标头及 GPL |
 | **Erosion-CN (second studied source)** | [Kianuni/Erosion-CN](https://github.com/Kianuni/Erosion-CN) · GPL-3.0 | 当前 LilaShift 补丁已有 Erosion-CN 相关注释：`DevicePlistWriter.swift` 借鉴原位写入设计；`AIReadinessCheckup.swift` 借鉴体检卡思路；`DeviceAIEligibility.swift` 和 `USRegulatoryModelMapping.swift` 据其列表/映射重实现 | **Kianuni**、其上游和相应贡献者；标注具体来源和许可。逐行代码相似性尚待复核，不可声称绝对独立原创 |
 | **Erosion upstream (already credited by GestaltX)** | [jailbreakdotparty/Erosion](https://github.com/jailbreakdotparty/Erosion) · GPL-3.0 | 固定上游 GestaltX v1.0.7 `AboutView.swift` 中已有单独的 Erosion 引用及 `GestaltX/Licenses/Erosion-GPL-3.0.txt` | **lunginspector**、**jailbreak.party** 及贡献者；保持原上游声明 |
 | **worse_query** | [forcequitOS/worse_query](https://github.com/forcequitOS/worse_query) · upstream notes GPL-3.0-or-later | 由 GestaltX 主源包含 `worse_query.m/.h` | **Taj C / forcequitOS**；继承并保留头文件原始声明 |
@@ -24,6 +24,6 @@
 
 ## 版本识别与下一步
 
-旧版 Release `v1.0.7-china-unlock` 的补丁 Git blob：`9593bb9ea27083affc463efc09557c2a0c81ce8b`；当前 `main` 补丁 Git blob：`ba46079a66d110bf1bf68ae708815928400eec25`。只有后者包含本审查提到的多项新版诊断和写入改进。**不得把后者的功能描述加到未重新构建、未测试的旧 IPA 中。**
+旧版 Release `v1.0.7-china-unlock` 的源码基线 `dfd4a7e`，补丁 Git blob：`9593bb9ea27083affc463efc09557c2a0c81ce8b`；当前 `main` 构建基线 `c60519c`，补丁 Git blob：`ba46079a66d110bf1bf68ae708815928400eec25`。只有后者包含本审查提到的多项新版诊断和写入改进。**不得把后者的功能描述加到未重新构建、未测试的旧 IPA 中。**
 
 下一步需要按文件逐项比对当前修改版与相应 Erosion-CN 源码，决定哪些是**复制、改写、纯事实性映射、独立重新实现、仅有灵感**，分别完善 SPDX/版权声明；同时在 **LilaShift About/Credits** 中单独加入 Kianuni/Erosion-CN，确保最终新 IPA 中也可查看。详细门禁见 [源码审查报告](LILASHIFT_SOURCE_AUDIT.md)。
