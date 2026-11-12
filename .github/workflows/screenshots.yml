@@ -11,10 +11,7 @@
 #   2-screen-lock.png       Screen & Lock Screen preset page (Display group)
 #   3-confirm-changes.png   Confirm Changes page (review sheet)
 #
-# The simulator is switched to dark appearance before capturing: the app
-# forces the light-lavender design (preferredColorScheme .light), so the
-# captures prove it still renders light even when the system is dark.
-#
+# Untested: this workflow has never run (no macOS runner on Linux).
 # Known limits, read before trusting the screenshots:
 # - The simulator has no real device document and the repository has no
 #   sample MobileGestalt plist, so the home and preset pages show the
@@ -36,7 +33,6 @@
 #   iPhone Duo on OS 27.0/27.2. iPhone 17 is the same 6.3-inch size
 #   class as iPhone 17 Pro, so it is the closest substitute.)
 name: Screenshot GestaltX China Unlock
-
 on:
   workflow_dispatch:
     inputs:
@@ -91,7 +87,6 @@ jobs:
           if [[ "$(xcodebuild -version | head -n 1)" == "Xcode 26."* ]]; then
             sed -i '' 's/objectVersion = 110;/objectVersion = 77;/' GestaltX.xcodeproj/project.pbxproj
           fi
-
           xcodebuild -project GestaltX.xcodeproj \
             -scheme GestaltX \
             -configuration Debug \
@@ -99,7 +94,6 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/derived" \
             CODE_SIGNING_ALLOWED=NO \
             build
-
           test -d "$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/GestaltX.app"
 
       - name: Capture the three pages
@@ -112,31 +106,20 @@ jobs:
             xcrun simctl list devices available
             exit 1
           fi
-
           xcrun simctl boot "$UDID" 2>/dev/null || true
           xcrun simctl bootstatus "$UDID" -b
-
-          # Dark appearance: the app forces light lavender, so the
-          # captures must still come out light. If the app ever follows
-          # the system dark mode again, these screenshots will show it.
-          xcrun simctl ui "$UDID" appearance dark
-          sleep 3
-
           mkdir -p "$RUNNER_TEMP/shots"
           xcrun simctl install "$UDID" "$APP"
-
           # 1. Tools home (--preview-tab also suppresses the welcome sheet)
           xcrun simctl launch "$UDID" com.huami.gestultx --preview-tab 0
           sleep 10
           xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/1-tools-home.png"
           xcrun simctl terminate "$UDID" com.huami.gestultx || true
-
           # 2. Preset page: Screen & Lock Screen (Display group sheet)
           xcrun simctl launch "$UDID" com.huami.gestultx --preview-tab 0 --preview-category Display
           sleep 10
           xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/2-screen-lock.png"
           xcrun simctl terminate "$UDID" com.huami.gestultx || true
-
           # 3. Confirm Changes page (review sheet; stages the pencil preset)
           xcrun simctl launch "$UDID" com.huami.gestultx --preview-tab 0 --preview-review
           sleep 10
