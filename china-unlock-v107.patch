@@ -314,7 +314,7 @@ index 08bbfc6..20ea6da 100644
      case keep, enable, disable, removeAdded
      var id: Int { rawValue }
 diff --git a/GestaltX/ContentView.swift b/GestaltX/ContentView.swift
-index 0a097c2..ce6d2a8 100644
+index 0a097c2..9c71af8 100644
 --- a/GestaltX/ContentView.swift
 +++ b/GestaltX/ContentView.swift
 @@ -31,6 +31,7 @@ struct ContentView: View {
@@ -340,7 +340,7 @@ index 0a097c2..ce6d2a8 100644
          }
          #endif
          .sheet(isPresented: Binding(get: { !acceptedWelcome && !isPreviewSession }, set: { _ in })) {
-@@ -333,206 +336,570 @@ struct ContentView: View {
+@@ -333,206 +336,568 @@ struct ContentView: View {
      }
  
      private var tools: some View {
@@ -587,11 +587,9 @@ index 0a097c2..ce6d2a8 100644
 -    @State private var asksInternalBuild = false
 +    @Environment(\.colorScheme) private var colorScheme
 +
-+    /// Light-purple glass tint for the hero card (#EAE1FF in light mode).
-+    /// The app is forced to the light scheme (see GestaltXApp), so the
-+    /// dark-mode tint below is unreachable in this build. Text on the
-+    /// card uses the adaptive primary/secondary styles so contrast
-+    /// holds in both modes.
++    /// Light-purple glass tint for the hero card (#EAE1FF in light mode,
++    /// a deep plum in dark mode). Text on the card uses the adaptive
++    /// primary/secondary styles so contrast holds in both modes.
 +    private var heroTint: Color {
 +        colorScheme == .dark
 +            ? Color(red: 0.16, green: 0.13, blue: 0.28).opacity(0.65)
@@ -1075,7 +1073,7 @@ index 0a097c2..ce6d2a8 100644
          .alert(L("Enable Internal Build?"), isPresented: $asksInternalBuild) {
              Button(L("Cancel"), role: .cancel) {}
              Button(L("Enable"), role: .destructive) {
-@@ -543,8 +910,237 @@ struct CategoryView: View {
+@@ -543,8 +908,237 @@ struct CategoryView: View {
              Text(L("This stages the system-wide InternalBuild flag. It can affect system services beyond the storage screen. You can review the change before applying it."))
          }
      }
@@ -1313,7 +1311,7 @@ index 0a097c2..ce6d2a8 100644
  struct AdditionalOptionsRow: View {
      @EnvironmentObject private var model: GestaltManager
  
-@@ -561,7 +1157,7 @@ struct AdditionalOptionsRow: View {
+@@ -561,7 +1155,7 @@ struct AdditionalOptionsRow: View {
              VStack(alignment: .leading, spacing: 8) {
                  Picker(L("Additional Options"), selection: Binding(
                      get: { model.cacheOptionChoice },
@@ -1322,7 +1320,7 @@ index 0a097c2..ce6d2a8 100644
                  )) {
                      ForEach(CacheOptionChoice.allCases) { choice in
                          Text(choice.title).tag(choice)
-@@ -569,6 +1165,8 @@ struct AdditionalOptionsRow: View {
+@@ -569,6 +1163,8 @@ struct AdditionalOptionsRow: View {
                  }
                  .pickerStyle(.menu)
                  .accessibilityIdentifier("cache-option-choice")
@@ -1331,7 +1329,7 @@ index 0a097c2..ce6d2a8 100644
                  Text(L("Some changes require a device restart."))
                      .font(.caption).foregroundStyle(.secondary)
                  HStack(alignment: .firstTextBaseline) {
-@@ -602,6 +1200,8 @@ struct WAPIPresetRow: View {
+@@ -602,6 +1198,8 @@ struct WAPIPresetRow: View {
                  }
                  .pickerStyle(.menu)
                  .accessibilityIdentifier("wapi-choice")
@@ -1340,7 +1338,7 @@ index 0a097c2..ce6d2a8 100644
                  Text(L("Disabling may show Wi-Fi and change some network options. Restart to apply."))
                      .font(.caption).foregroundStyle(.secondary)
              }
-@@ -715,53 +1315,361 @@ struct ChangeReviewView: View {
+@@ -715,53 +1313,361 @@ struct ChangeReviewView: View {
      @EnvironmentObject private var model: GestaltManager
      @Environment(\.dismiss) private var dismiss
      @State private var asksApply = false
@@ -1730,7 +1728,7 @@ index 0a097c2..ce6d2a8 100644
      private func valueRow(_ title: String, value: Any?) -> some View {
          VStack(alignment: .leading, spacing: 4) {
              Text(L(title)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-@@ -771,6 +1679,7 @@ struct ChangeReviewView: View {
+@@ -771,6 +1677,7 @@ struct ChangeReviewView: View {
      }
  }
  
@@ -1738,7 +1736,7 @@ index 0a097c2..ce6d2a8 100644
  struct BackupsView: View {
      let share: (TemporaryExport) -> Void
      @EnvironmentObject private var model: GestaltManager
-@@ -868,7 +1777,6 @@ struct BrandMark: View {
+@@ -868,7 +1775,6 @@ struct BrandMark: View {
              .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)).accessibilityHidden(true)
      }
  }
@@ -1898,27 +1896,12 @@ index 89ea586..6cf5185 100644
          do {
              let result = try await files.loadDevice()
              accept(result); deviceAccessible = true; status = "Device connected"
-diff --git a/GestaltX/GestaltXApp.swift b/GestaltX/GestaltXApp.swift
-index 8ba14f4..8cfa66a 100644
---- a/GestaltX/GestaltXApp.swift
-+++ b/GestaltX/GestaltXApp.swift
-@@ -10,6 +10,10 @@ struct GestaltXApp: App {
-     var body: some Scene {
-         WindowGroup {
-             ContentView()
-+                // The China Unlock build is always light lavender (#F6F3FF):
-+                // it never follows the system dark mode, so the app always
-+                // looks like the light-lavender reference design.
-+                .preferredColorScheme(.light)
-                 .environment(\.layoutDirection, Bundle.main.preferredLocalizations.first?.hasPrefix("fa") == true ? .rightToLeft : .leftToRight)
-         }
-     }
 diff --git a/GestaltX/LiquidGlass.swift b/GestaltX/LiquidGlass.swift
 new file mode 100644
-index 0000000..4091cef
+index 0000000..c58859d
 --- /dev/null
 +++ b/GestaltX/LiquidGlass.swift
-@@ -0,0 +1,438 @@
+@@ -0,0 +1,436 @@
 +// SPDX-License-Identifier: GPL-3.0-only
 +// Copyright (C) 2026 huamidev
 +import SwiftUI
@@ -1967,10 +1950,8 @@ index 0000000..4091cef
 +}
 +
 +/// Light-lavender page background (#F6F3FF family) with a few soft,
-+/// static lavender light spots. The app is forced to the light scheme
-+/// (see GestaltXApp), so the dark-mode branch below is unreachable in
-+/// this build; it is kept only so the component still renders correctly
-+/// if the force-light modifier is ever removed. No animation, no
++/// static lavender light spots. Dark mode uses a deep-plum glass theme
++/// in the same lavender family (no midnight blue). No animation, no
 +/// strong glow. When Reduce Transparency is on, the spots disappear
 +/// and the background is solid.
 +struct GlassBackground: View {
@@ -24043,20 +24024,6 @@ index 4161702..be70b00 100644
  ## 兼容性
  
  支持 **iOS / iPadOS 27.x**。**iOS / iPadOS 26.x 不支持本机 MobileGestalt 访问。** 基于 [worse_query](https://github.com/forcequitOS/worse_query)。SystemGroup 访问需要 iOS 27，功能可用性因设备与系统而异，同时支持本地 plist 编辑。
-diff --git a/ShareExtension/ShareViewController.swift b/ShareExtension/ShareViewController.swift
-index 8468029..f3d8de1 100644
---- a/ShareExtension/ShareViewController.swift
-+++ b/ShareExtension/ShareViewController.swift
-@@ -20,6 +20,9 @@ final class ShareViewController: UIViewController {
- 
-     override func viewDidLoad() {
-         super.viewDidLoad()
-+        // The China Unlock build is always light lavender: never follow
-+        // the system dark mode, same as the main app.
-+        overrideUserInterfaceStyle = .light
-         view.backgroundColor = .systemGroupedBackground
-         let title = UILabel()
-         title.text = "GestaltX"
 diff --git a/localization/es.json b/localization/es.json
 index f94e44a..a7f7e3c 100644
 --- a/localization/es.json
