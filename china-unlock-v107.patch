@@ -46,15 +46,101 @@ index 50e87bd..173b57d 100644
  ## [1.0.7] - 2026-11-13
  
  构建号 `11130112`。
+diff --git a/GestaltX.xcodeproj/xcshareddata/xcschemes/GestaltX.xcscheme b/GestaltX.xcodeproj/xcshareddata/xcschemes/GestaltX.xcscheme
+new file mode 100644
+index 0000000..83dfd75
+--- /dev/null
++++ b/GestaltX.xcodeproj/xcshareddata/xcschemes/GestaltX.xcscheme
+@@ -0,0 +1,80 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<Scheme
++   LastUpgradeVersion = "2600"
++   version = "1.7">
++   <BuildAction
++      parallelizeBuildables = "YES"
++      buildImplicitDependencies = "YES"
++      buildArchitectures = "Automatic">
++      <BuildActionEntries>
++         <BuildActionEntry
++            buildForTesting = "YES"
++            buildForRunning = "YES"
++            buildForProfiling = "YES"
++            buildForArchiving = "YES"
++            buildForAnalyzing = "YES">
++            <BuildableReference
++               BuildableIdentifier = "primary"
++               BlueprintIdentifier = "3657C2D8303730E800908AE2"
++               BuildableName = "GestaltX.app"
++               BlueprintName = "GestaltX"
++               ReferencedContainer = "container:GestaltX.xcodeproj">
++            </BuildableReference>
++         </BuildActionEntry>
++      </BuildActionEntries>
++   </BuildAction>
++   <TestAction
++      buildConfiguration = "Debug"
++      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
++      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
++      shouldUseLaunchSchemeArgsEnv = "YES"
++      shouldAutocreateTestPlan = "YES">
++      <Testables>
++      </Testables>
++   </TestAction>
++   <LaunchAction
++      buildConfiguration = "Debug"
++      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
++      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
++      launchStyle = "0"
++      useCustomWorkingDirectory = "NO"
++      ignoresPersistentStateOnLaunch = "NO"
++      debugDocumentVersioning = "YES"
++      debugServiceExtension = "internal"
++      allowLocationSimulation = "YES">
++      <BuildableProductRunnable
++         runnableDebuggingMode = "0">
++         <BuildableReference
++            BuildableIdentifier = "primary"
++            BlueprintIdentifier = "3657C2D8303730E800908AE2"
++            BuildableName = "GestaltX.app"
++            BlueprintName = "GestaltX"
++            ReferencedContainer = "container:GestaltX.xcodeproj">
++         </BuildableReference>
++      </BuildableProductRunnable>
++   </LaunchAction>
++   <ProfileAction
++      buildConfiguration = "Release"
++      shouldUseLaunchSchemeArgsEnv = "YES"
++      savedToolIdentifier = ""
++      useCustomWorkingDirectory = "NO"
++      debugDocumentVersioning = "YES">
++      <BuildableProductRunnable
++         runnableDebuggingMode = "0">
++         <BuildableReference
++            BuildableIdentifier = "primary"
++            BlueprintIdentifier = "3657C2D8303730E800908AE2"
++            BuildableName = "GestaltX.app"
++            BlueprintName = "GestaltX"
++            ReferencedContainer = "container:GestaltX.xcodeproj">
++         </BuildableReference>
++      </BuildableProductRunnable>
++   </ProfileAction>
++   <AnalyzeAction
++      buildConfiguration = "Debug">
++   </AnalyzeAction>
++   <ArchiveAction
++      buildConfiguration = "Release"
++      revealArchiveInOrganizer = "YES">
++   </ArchiveAction>
++</Scheme>
 diff --git a/GestaltX/AboutView.swift b/GestaltX/AboutView.swift
-index e66594b..c2d7789 100644
+index e66594b..f79cf44 100644
 --- a/GestaltX/AboutView.swift
 +++ b/GestaltX/AboutView.swift
-@@ -37,6 +37,26 @@ struct AboutView: View {
+@@ -37,6 +37,28 @@ struct AboutView: View {
                      }.padding(.vertical, 6)
                  }
              }
-+            Section(L("Open Source & Acknowledgements")) {
++            Section {
 +                LabeledContent(L("Original Project"), value: "GestaltX")
 +                LabeledContent(L("Original Author"), value: "huamidev")
 +                LabeledContent(L("Enhanced Version Maintainer"), value: "@steam8871")
@@ -70,6 +156,8 @@ index e66594b..c2d7789 100644
 +                Link(destination: GestaltBrand.projects) {
 +                    LabeledContent(L("Source Code"), value: "github.com/huamidev/GestaltX")
 +                }
++            } header: {
++                Text(L("Open Source & Acknowledgements"))
 +            } footer: {
 +                Text(L("The enhanced version is distributed under the GNU GPL v3.0. Its complete source is distributed with the release as the pristine v1.0.7 source plus the modification patch."))
 +                    .font(.footnote)
@@ -220,7 +308,7 @@ index 08bbfc6..20ea6da 100644
      case keep, enable, disable, removeAdded
      var id: Int { rawValue }
 diff --git a/GestaltX/ContentView.swift b/GestaltX/ContentView.swift
-index 0a097c2..253c922 100644
+index 0a097c2..9c71af8 100644
 --- a/GestaltX/ContentView.swift
 +++ b/GestaltX/ContentView.swift
 @@ -31,6 +31,7 @@ struct ContentView: View {
@@ -800,7 +888,7 @@ index 0a097c2..253c922 100644
 +}
 +
 +struct ToolGroupView: View {
-+    let group: ToolGroup
++    fileprivate let group: ToolGroup
 +    let systemSettings: SystemSettingsModel
 +    let customizations: CustomizationModel
 +    let launchCatalog: LaunchArtworkCatalogModel
@@ -1804,7 +1892,7 @@ index 89ea586..6cf5185 100644
              accept(result); deviceAccessible = true; status = "Device connected"
 diff --git a/GestaltX/LiquidGlass.swift b/GestaltX/LiquidGlass.swift
 new file mode 100644
-index 0000000..cfbe4a4
+index 0000000..c58859d
 --- /dev/null
 +++ b/GestaltX/LiquidGlass.swift
 @@ -0,0 +1,436 @@
@@ -1953,7 +2041,7 @@ index 0000000..cfbe4a4
 +    }
 +
 +    @available(iOS 26.0, *)
-+    private func glassEffect() -> GlassEffect {
++    private func glassEffect() -> Glass {
 +        if let tint {
 +            return .regular.tint(tint).interactive()
 +        }
